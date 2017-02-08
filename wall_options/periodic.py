@@ -3,26 +3,17 @@ from scipy.special import erfinv
 import h5py
 import params
 
-""" 
-This file contains 3 functions, which define periodic B.C's in 3 directions
-Depending upon the choice of the user, periodic boundary conditions may be set
-to either of the x,y and z directions.
-
-A periodic B.C means that a particle that encounters such a boundary will result
-in the particle reaching the other side of the box. Effectively, this means that
-the particle in moving on a ring
-"""
-
-"""Here we shall assign values as set in params"""
+"""Here we shall re-assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
-simulation_dimension = params.simulation_dimension
-restart_simulation   = params.restart_simulation
 choice_integrator    = params.choice_integrator
 collision_operator   = params.collision_operator
 
-if(collision_operator == "hardsphere"):
-  scattering_distance = params.scattering_distance
+plot_spatial_temperature_profile = params.plot_spatial_temperature_profile
+
+if(plot_spatial_temperature_profile == "true"):
+  x_zones_temperature = params.x_zones_temperature
+  y_zones_temperature = params.y_zones_temperature
 
 elif(collision_operator == "potential-based"):
   potential_steepness     = params.potential_steepness
@@ -30,10 +21,9 @@ elif(collision_operator == "potential-based"):
   order_finite_difference = params.order_finite_difference
 
 elif(collision_operator == "montecarlo"):
-  x_zones            = params.x_zones
-  y_zones            = params.y_zones
-  scattered_fraction = params.scattered_fraction
-
+  x_zones_montecarlo = params.x_zones_montecarlo
+  y_zones_montecarlo = params.y_zones_montecarlo
+  
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
 T_initial          = params.T_initial
@@ -53,6 +43,16 @@ if(wall_condition_z == "thermal"):
   T_front_wall = params.T_front_wall
   T_back_wall  = params.T_back_wall
 
+fields_enabled   = params.fields_enabled
+
+if(fields_enabled == "true"):
+  spread            = params.spread
+  ghost_cells       = params.ghost_cells
+  speed_of_light    = params.speed_of_light
+  charge            = params.charge
+  x_zones_field     = params.x_zones_field
+  y_zones_field     = params.y_zones_field
+
 left_boundary    = params.left_boundary
 right_boundary   = params.right_boundary
 length_box_x     = params.length_box_x
@@ -65,7 +65,7 @@ back_boundary    = params.back_boundary
 front_boundary   = params.front_boundary
 length_box_z     = params.length_box_z
 
-#Here we complete import of all the variable from the parameters file
+# Here we complete import of all the variable from the parameters file
 
 def wall_x(x_coords, vel_x, vel_y, vel_z):
 
