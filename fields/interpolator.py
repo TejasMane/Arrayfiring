@@ -11,17 +11,14 @@ for more details regarding the algorithm used.
 
 # returns the interpolated field at x,y position on the particles spatial grid with the field's grid systems
 # ( x_grid and y_grid), field values at these grid locations and number of ghost cells provided to the function
-
 def bilinear_interpolate(x, y, x_grid, y_grid, F, ghost_cells, Lx, Ly):
   # x, y are the coordinates at which Interpolated fields have to found
   # x_grid and y_grid are the spatial grids for the field F used
   # F is the electric or magnetic field
-  print(x)
-  
+
   # Storing the field F in temperory variable
-  print(F)
+
   F_function = F
-  print(F_function)
   n = (len(F_function[0, :]) - 1 - 2 * ghost_cells)  # number of zones
 
   x_zone = int(n * np.float(x - x_grid[0])/Lx)  # indexing from zero itself
@@ -64,5 +61,6 @@ def bilinear_interpolate(x, y, x_grid, y_grid, F, ghost_cells, Lx, Ly):
 # Vectorizing the interpolation function
 
 bilinear_interpolate = np.vectorize(bilinear_interpolate, excluded=(['x_grid', 'y_grid', 'F','ghost_cells']))
+
 
 """-------------------------------------------------------END--------------------------------------------------------"""

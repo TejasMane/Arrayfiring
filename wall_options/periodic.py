@@ -80,7 +80,7 @@ def wall_x(x_coords, vel_x, vel_y, vel_z):
 def wall_y(y_coords, vel_x, vel_y, vel_z):
 
   collided_top = np.where(y_coords > top_boundary)
-  collided_bot = np.where(y_coords < bot_boundary)
+  collided_bot = np.where(y_coords < bottom_boundary)
 
   y_coords[collided_bot[0]] = y_coords[collided_bot[0]] + length_box_y
   y_coords[collided_top[0]] = y_coords[collided_top[0]] - length_box_y

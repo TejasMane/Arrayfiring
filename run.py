@@ -204,7 +204,7 @@ for time_index,t0 in enumerate(time):
     # This way of expressing the solution matrix allows us to easily vectorize the code
 
     X_right_physical, Y_top_physical = np.meshgrid( x_right[ghost_cells:-ghost_cells],\
-                                                    y_top[ghost_cells:-ghost_cells]\
+                                                    y_top  [ghost_cells:-ghost_cells]\
                                                   )
 
     I, J = np.meshgrid( range(ghost_cells, len(x_center) - ghost_cells),\
@@ -232,28 +232,65 @@ for time_index,t0 in enumerate(time):
                      length_box_x, length_box_y, dx, dy \
                     )
 
-    from fields.current_depositor import fdtd
+    from fields.fdtd import fdtd
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
 
     # Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
-
-"""
+   
     # E at ndt and B averaged at ndt to push v at (n-0.5)dt
-    print(Ex)
-    Ex_particle = np.array( bilinear_interpolate( x=[x_coords], y=[y_coords], x_grid=x_center,\
-                                                  y_grid=y_top, F=Ex, ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y
-                                                )
-    
+    """
+    Ex_particle = bilinear_interpolate( x_initial, y_initial, x_center, y_top, Ex, ghost_cells, length_box_x, length_box_y)
+    Ey_particle = bilinear_interpolate( x_initial, y_initial, x_right , y_top, Ey, ghost_cells, length_box_x, length_box_y)
+    Ez_particle = bilinear_interpolate( x_initial, y_initial, x_center, y_top, Ez, ghost_cells, length_box_x, length_box_y)
+      
+    Bx_particle = bilinear_interpolate( x_initial, y_initial, x_right,  y_top, 0.5*(Bx + Bx_updated), ghost_cells, length_box_x, length_box_y)
+    By_particle = bilinear_interpolate( x_initial, y_initial, x_center, y_top, 0.5*(By + By_updated), ghost_cells, length_box_x, length_box_y)
+    Bz_particle = bilinear_interpolate( x_initial, y_initial, x_right,  y_top, 0.5*(Bz + Bz_updated), ghost_cells, length_box_x, length_box_y)
   
+    """
+    initial_conditions = np.concatenate([x_initial, y_initial])
+    Lx = Ly = 1
+
+    Ex_particle =  bilinear_interpolate( [initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_center,\
+                                          y_grid=y_top, F=Ex, ghost_cells = ghost_cells, Lx = Lx, Ly = Ly\
+                                       )\
+                          
+
+    Ey_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_right,\
+                                                  y_grid=y_top, F=Ey, ghost_cells = ghost_cells, Lx = Lx, Ly = Ly\
+                                                )\
+                          )
+
+    Ez_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_center,\
+                                                  y_grid=y_top, F=Ez, ghost_cells = ghost_cells, Lx = Lx, Ly = Ly\
+                                                )\
+                          )
+
+    Bx_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_right,\
+                                                  y_grid=y_top, F=((Bx+Bx_updated)/2), ghost_cells = ghost_cells, Lx = Lx, Ly = Ly\
+                                                )\
+                          )
+
+    By_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_center,\
+                                                  y_grid=y_top, F=((By+By_updated)/2), ghost_cells = ghost_cells, Lx = Lx, Ly = Ly\
+                                                )\
+                          )
+
+    Bz_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_right,\
+                                                  y_grid=y_top, F=((Bz+Bz_updated)/2), ghost_cells = ghost_cells, Lx = Lx, Ly = Ly\
+                                                )\
+                          )
+
     
- #   Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
+    Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
 
     (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial  , y_initial  , z_initial,\
-                                                                     vel_x      , vel_y      , vel_z    , dt, \
+                                                                     vel_x_initial, vel_y_initial, vel_z_initial    , dt, \
                                                                      Ex_particle, Ey_particle, Ez_particle,\
                                                                      Bx_particle, By_particle, Bz_particle \
-                                                                    )"""
+                                                                    )
 
+  
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
   (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
