@@ -1,3 +1,5 @@
+"""NOT PORTED TO ARRAYFIRE YET"""
+
 import numpy as np
 from scipy.special import erfinv
 import h5py

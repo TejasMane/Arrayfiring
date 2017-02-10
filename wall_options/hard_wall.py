@@ -2,24 +2,16 @@ import numpy as np
 from scipy.special import erfinv
 import h5py
 import params
-
-""" 
-This file contains 3 functions, which define hardwall B.C's in 3 directions
-Depending upon the choice of the user, hardwall boundary conditions may be set
-to either of the x,y and z directions.
-
-A hardwall B.C means that a particle that encounters such a boundary will reflect
-back with its component of velocity perpendicular to the wall being the same in
-magnitude, but opposite in direction
-"""
+import arrayfire as af
 
 """Here we shall assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
-simulation_dimension = params.simulation_dimension
-restart_simulation   = params.restart_simulation
 choice_integrator    = params.choice_integrator
 collision_operator   = params.collision_operator
+arrayfire_backend    = params.arrayfire_backend
+
+af.set_backend(arrayfire_backend)
 
 if(collision_operator == "hardsphere"):
   scattering_distance = params.scattering_distance
@@ -30,9 +22,9 @@ elif(collision_operator == "potential-based"):
   order_finite_difference = params.order_finite_difference
 
 elif(collision_operator == "montecarlo"):
-  x_zones            = params.x_zones
-  y_zones            = params.y_zones
-  scattered_fraction = params.scattered_fraction
+  x_zones_montecarlo = params.x_zones_montecarlo
+  y_zones_montecarlo = params.y_zones_montecarlo
+  z_zones_montecarlo = params.x_zones_montecarlo
 
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
@@ -67,41 +59,51 @@ length_box_z     = params.length_box_z
 
 #Here we complete import of all the variable from the parameters file
 
+""" 
+This file contains 3 functions, which define hardwall B.C's in 3 directions
+Depending upon the choice of the user, hardwall boundary conditions may be set
+to either of the x,y and z directions.
+
+A hardwall B.C means that a particle that encounters such a boundary will reflect
+back with its component of velocity perpendicular to the wall being the same in
+magnitude, but opposite in direction
+"""
+
 def wall_x(x_coords, vel_x, vel_y, vel_z):
 
-  collided_right = np.where(x_coords > right_boundary)
-  collided_left  = np.where(x_coords < left_boundary)
+  collided_right = af.algorithm.where(x_coords > right_boundary)
+  collided_left  = af.algorithm.where(x_coords < left_boundary)
 
-  x_coords[collided_left[0]] = left_boundary
-  vel_x[collided_left[0]]    = vel_x[collided_left[0]]*(-1)    
+  x_coords[collided_left] = left_boundary
+  vel_x[collided_left]    = vel_x[collided_left]*(-1)    
 
-  x_coords[collided_right[0]] = right_boundary
-  vel_x[collided_right[0]]    = vel_x[collided_right[0]]*(-1)    
+  x_coords[collided_right] = right_boundary
+  vel_x[collided_right]    = vel_x[collided_right]*(-1)    
 
   return(x_coords, vel_x, vel_y, vel_z)
 
 def wall_y(y_coords, vel_x, vel_y, vel_z):
 
-  collided_top = np.where(y_coords > top_boundary)
-  collided_bot = np.where(y_coords < bot_boundary)
+  collided_top = af.algorithm.where(y_coords > top_boundary)
+  collided_bot = af.algorithm.where(y_coords < bottom_boundary)
 
-  y_coords[collided_bot[0]] = bot_boundary
-  vel_y[collided_bot[0]]    = vel_y[collided_bot[0]]*(-1)    
+  y_coords[collided_bot] = botom_boundary
+  vel_y[collided_bot]    = vel_y[collided_bot]*(-1)    
 
-  y_coords[collided_top[0]] = top_boundary
-  vel_y[collided_top[0]]    = vel_y[collided_top[0]]*(-1)    
+  y_coords[collided_top] = top_boundary
+  vel_y[collided_top]    = vel_y[collided_top]*(-1)    
 
   return(y_coords, vel_x, vel_y, vel_z)
 
 def wall_z(z_coords, vel_x, vel_y, vel_z):
 
-  collided_front = np.where(z_coords > front_boundary)
-  collided_back  = np.where(z_coords < back_boundary)
+  collided_front = af.algorithm.where(z_coords > front_boundary)
+  collided_back  = af.algorithm.where(z_coords < back_boundary)
 
-  z_coords[collided_back[0]] = back_boundary
-  vel_z[collided_back[0]]    = vel_z[collided_back[0]]*(-1)    
+  z_coords[collided_back] = back_boundary
+  vel_z[collided_back]    = vel_z[collided_back]*(-1)    
 
-  z_coords[collided_front[0]] = front_boundary
-  vel_z[collided_front[0]]    = vel_z[collided_front[0]]*(-1)    
+  z_coords[collided_front] = front_boundary
+  vel_z[collided_front]    = vel_z[collided_front]*(-1)    
 
   return(z_coords, vel_x, vel_y, vel_z)

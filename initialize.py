@@ -2,14 +2,16 @@ import numpy as np
 from scipy.special import erfinv
 import h5py
 import params
+import arrayfire as af
 
 """Here we shall assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
-simulation_dimension = params.simulation_dimension
-restart_simulation   = params.restart_simulation
 choice_integrator    = params.choice_integrator
 collision_operator   = params.collision_operator
+arrayfire_backend    = params.arrayfire_backend
+
+af.set_backend(arrayfire_backend)
 
 if(collision_operator == "hardsphere"):
   scattering_distance = params.scattering_distance
@@ -20,9 +22,9 @@ elif(collision_operator == "potential-based"):
   order_finite_difference = params.order_finite_difference
 
 elif(collision_operator == "montecarlo"):
-  x_zones            = params.x_zones
-  y_zones            = params.y_zones
-  scattered_fraction = params.scattered_fraction
+  x_zones_montecarlo = params.x_zones_montecarlo
+  y_zones_montecarlo = params.y_zones_montecarlo
+  z_zones_montecarlo = params.x_zones_montecarlo
 
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
@@ -66,47 +68,40 @@ change may also be made at params.py
 
 """ Initializing the positions for the particles """
 
-initial_position_x = left_boundary   + length_box_x * np.random.rand(no_of_particles)
-initial_position_y = bottom_boundary + length_box_y * np.random.rand(no_of_particles)
-initial_position_z = back_boundary   + length_box_z * np.random.rand(no_of_particles)
+initial_position_x = left_boundary   + length_box_x * af.randu(no_of_particles)
+initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
+initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
 
 """ Initializing velocities to the particles """
 
 # Declaring the random variable which shall be used to sample velocities:
-R1 = np.random.rand(no_of_particles)
-R2 = np.random.rand(no_of_particles)
-R3 = np.random.rand(no_of_particles)
+R1 = af.randu(no_of_particles)
+R2 = af.randu(no_of_particles)
+R3 = af.randu(no_of_particles)
+R4 = af.randu(no_of_particles)
 
 # Sampling velocities corresponding to Maxwell-Boltzmann distribution at T_initial
-initial_velocity_x = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)*erfinv(2*R1-1)
-initial_velocity_y = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)*erfinv(2*R2-1)
-initial_velocity_z = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)*erfinv(2*R3-1)
+# For this we shall be using the Box-Muller transformation
+constant_multiply  = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)
+initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
+initial_velocity_y = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R1)
+initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
 
 """ Time parameters for the simulation """
 
-box_crossing_time_scale = (length_box_x/np.max(initial_velocity_x))
-final_time              = 5.0  #20 * box_crossing_time_scale
+box_crossing_time_scale = (length_box_x/af.algorithm.max(initial_velocity_x))
+final_time              = 20 * box_crossing_time_scale
 dt                      = 0.001 * box_crossing_time_scale
 time                    = np.arange(0, final_time, dt)
 
 """ Writing the data to a file """
 
-if(simulation_dimension == 3):
-  h5f = h5py.File('data_files/initial_conditions/initial_data.h5', 'w')
-  h5f.create_dataset('time',          data = time)
-  h5f.create_dataset('x_coordinates', data = initial_position_x)
-  h5f.create_dataset('y_coordinates', data = initial_position_y)
-  h5f.create_dataset('z_coordinates', data = initial_position_z)
-  h5f.create_dataset('velocity_x',    data = initial_velocity_x)
-  h5f.create_dataset('velocity_y',    data = initial_velocity_y)
-  h5f.create_dataset('velocity_z',    data = initial_velocity_z)
-  h5f.close()
-
-if(simulation_dimension == 2):
-  h5f = h5py.File('data_files/initial_conditions/initial_data.h5', 'w')
-  h5f.create_dataset('time',          data = time)
-  h5f.create_dataset('x_coordinates', data = initial_position_x)
-  h5f.create_dataset('y_coordinates', data = initial_position_y)
-  h5f.create_dataset('velocity_x',    data = initial_velocity_x)
-  h5f.create_dataset('velocity_y',    data = initial_velocity_y)
-  h5f.close()
+h5f = h5py.File('data_files/initial_conditions/initial_data.h5', 'w')
+h5f.create_dataset('time',     data = time)
+h5f.create_dataset('x_coords', data = initial_position_x)
+h5f.create_dataset('y_coords', data = initial_position_y)
+h5f.create_dataset('z_coords', data = initial_position_z)
+h5f.create_dataset('vel_x',    data = initial_velocity_x)
+h5f.create_dataset('vel_y',    data = initial_velocity_y)
+h5f.create_dataset('vel_z',    data = initial_velocity_z)
+h5f.close()

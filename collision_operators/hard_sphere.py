@@ -2,23 +2,16 @@ import numpy as np
 from scipy.special import erfinv
 import h5py
 import params
-
-"""
-This model uses the HS model for scattering the particles.
-By this model the particles are effectively scattered in the 
-same way as to how one models collisions amongst billiard 
-balls. By this model we shall condsider only 2-body collisions.
-Multi-body collisions are treated as 2 body collisions, with the 
-choice of the 2 bodies being random.
-"""
+import arrayfire as af
 
 """Here we shall assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
-simulation_dimension = params.simulation_dimension
-restart_simulation   = params.restart_simulation
 choice_integrator    = params.choice_integrator
 collision_operator   = params.collision_operator
+arrayfire_backend    = params.arrayfire_backend
+
+af.set_backend(arrayfire_backend)
 
 if(collision_operator == "hardsphere"):
   scattering_distance = params.scattering_distance
@@ -29,9 +22,9 @@ elif(collision_operator == "potential-based"):
   order_finite_difference = params.order_finite_difference
 
 elif(collision_operator == "montecarlo"):
-  x_zones            = params.x_zones
-  y_zones            = params.y_zones
-  scattered_fraction = params.scattered_fraction
+  x_zones_montecarlo = params.x_zones_montecarlo
+  y_zones_montecarlo = params.y_zones_montecarlo
+  z_zones_montecarlo = params.x_zones_montecarlo
 
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
@@ -64,43 +57,50 @@ back_boundary    = params.back_boundary
 front_boundary   = params.front_boundary
 length_box_z     = params.length_box_z
 
-#Here we complete import of all the variable from the parameters file
+# Here we complete import of all the variable from the parameters file
 
-def collision_operator(sol):
+"""
+This model uses the HS model for scattering the particles.
+By this model the particles are effectively scattered in the 
+same way as to how one models collisions amongst billiard 
+balls. By this model we shall condsider only 2-body collisions.
+Multi-body collisions are treated as 2 body collisions, with the 
+choice of the 2 bodies being random.
+"""
 
-  if(simulation_dimension == 3):
-    print("HS Scattering in 3D still in development! Please change to 2D mode")
+def collision_operator(x_coords, y_coords, z_coords, vel_x, vel_y, vel_z):
+
+  x_coords_1   = af.tile(x_coords, 1, no_of_particles)        
+  x_coords_2   = af.tile(af.reorder(x_coords, 1), no_of_particles, 1)
+  x_difference = x_coords_1 - x_coords_2
+
+  y_coords_1   = af.tile(y_coords, 1, no_of_particles)        
+  y_coords_2   = af.tile(af.reorder(y_coords, 1), no_of_particles, 1)
+  y_difference = y_coords_1 - y_coords_2
+
+  z_coords_1   = af.tile(z_coords, 1, no_of_particles)        
+  z_coords_2   = af.tile(af.reorder(z_coords, 1), no_of_particles, 1)
+  z_difference = z_coords_1 - z_coords_2
+
+  distance = af.arith.sqrt(x_difference**2 + y_difference**2 + z_difference**2)
+  rcap_x   = x_difference/distance
+  rcap_y   = y_difference/distance
+  rcap_z   = z_difference/distance
 
   for i in range(no_of_particles):
-    j=sol[(i+1):no_of_particles]        
-    k=sol[(i+1+no_of_particles):2*no_of_particles]
-    velx=sol[i+2*no_of_particles]*np.ones(j.size)
-    vely=sol[i+3*no_of_particles]*np.ones(j.size)
-    velx_others=sol[(i+1+2*no_of_particles):3*no_of_particles]
-    vely_others=sol[(i+1+3*no_of_particles):4*no_of_particles]
-    x_particle=sol[i]
-    y_particle=sol[i+no_of_particles]        
-    j=ne.evaluate("j-x_particle")
-    k=ne.evaluate("k-y_particle")
-    dist=ne.evaluate("sqrt(j**2+k**2)")
-    j=j/dist
-    k=k/dist
-    test_collision=ne.evaluate("dist<0.01") 
-    test_collision=ne.evaluate("where(test_collision,1,0)")
-    indices=np.nonzero(test_collision)
+   
+    indices = af.algorithm.where((distance[:,i]<0.01)-af.identity(no_of_particles, no_of_particles)[:,i])
+    index   = indices[np.random.randint(0, af.Array.elements(indices))]
+   
+    p = (vel_x[i]*rcap_x[index, i]     + vel_y[i]*rcap_y[index, i]     + vel_z[i]*rcap_z[index, i] - \
+         vel_x[index]*rcap_x[index, i] - vel_y[index]*rcap_y[index, i] - vel_z[index]*rcap_z[index, i])
     
-    if(np.sum(test_collision)!=0):
-      p=(velx*j+vely*k-velx_others*j-vely_others*k)*test_collision
-      velx=velx*test_collision-p*j
-      velx_others=velx_others+p*j
-      vely=vely*test_collision-p*k
-      vely_others=vely_others+p*k 
-      index=np.random.randint(0,(indices[0].size))
-      sol[i+1+indices[0][index]+2*no_of_particles] = velx_others[indices[0][index]]
-
-      sol[i+1+indices[0][index]+3*no_of_particles] = vely_others[indices[0][index]]
-
-      sol[i+2*no_of_particles]=velx[indices[0][index]]
-      sol[i+3*no_of_particles]=vely[indices[0][index]]
-
-  return(sol)
+    vel_x[i] = vel_x[i] - p*rcap_x
+    vel_y[i] = vel_y[i] - p*rcap_y
+    vel_z[i] = vel_z[i] - p*rcap_z
+    
+    vel_x[index] = vel_x[index] - p*rcap_x
+    vel_y[index] = vel_y[index] - p*rcap_y
+    vel_z[index] = vel_z[index] - p*rcap_z
+   
+  return(vel_x, vel_y, vel_z)
