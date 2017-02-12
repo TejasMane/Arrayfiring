@@ -1,10 +1,10 @@
-no_of_particles      = 100000
+no_of_particles      = 10000
 mass_particle        = 1.0
 boltzmann_constant   = 1.0
 
 # Specify the backend that you want ArrayFire to use : "cuda", "opencl", "cpu" 
 # Default when available : cuda>opencl>cpu
-arrayfire_backend    = "opencl"
+arrayfire_backend    = "cpu"
 
 # Note that simulation time parameters must be changed from the initialize file
 
@@ -54,7 +54,7 @@ elif(collision_operator == "montecarlo"):
 
 T_initial        = 1.5
 
-wall_condition_x = "periodic"
+wall_condition_x = "thermal"
 wall_condition_y = "periodic"
 wall_condition_z = "periodic"
 

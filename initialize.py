@@ -91,7 +91,7 @@ initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith
 
 box_crossing_time_scale = (length_box_x/af.algorithm.max(initial_velocity_x))
 final_time              = 20 * box_crossing_time_scale
-dt                      = 0.001 * box_crossing_time_scale
+dt                      = 0.01 * box_crossing_time_scale
 time                    = np.arange(0, final_time, dt)
 
 """ Writing the data to a file """

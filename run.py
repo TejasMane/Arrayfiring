@@ -74,9 +74,10 @@ y_initial = af.Array(y_initial.ctypes.data, y_initial.shape, y_initial.dtype.cha
 z_initial = af.Array(z_initial.ctypes.data, z_initial.shape, z_initial.dtype.char)
 
 vel_x_initial = af.Array(vel_x_initial.ctypes.data, vel_x_initial.shape, vel_x_initial.dtype.char)
-vel_x_initial = af.Array(vel_y_initial.ctypes.data, vel_y_initial.shape, vel_y_initial.dtype.char) 
-vel_x_initial = af.Array(vel_z_initial.ctypes.data, vel_z_initial.shape, vel_z_initial.dtype.char)
+vel_y_initial = af.Array(vel_y_initial.ctypes.data, vel_y_initial.shape, vel_y_initial.dtype.char) 
+vel_z_initial = af.Array(vel_z_initial.ctypes.data, vel_z_initial.shape, vel_z_initial.dtype.char)
 
+#print(x_initial)
 # Considering a non-adaptive time-stepping
 dt = time[1] - time[0]
 
@@ -172,7 +173,7 @@ for time_index,t0 in enumerate(time):
 
 
   (vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \
-                                             vel_x_initial, vel_y_initial, vel_z_initial, dt\
+                                             vel_x_initial, vel_y_initial, vel_z_initial, dt \
                                             )
 
   old_x = x_coords
@@ -200,7 +201,6 @@ for time_index,t0 in enumerate(time):
   if(collision_operator == "potential-based"):
     from collision_operators.potential import calculate_potential_energy
     potential_energy = calculate_potential_energy(sol)
-
   
   # Writing the data to file every 100 time steps
   # This data will then be post-processed to generate results

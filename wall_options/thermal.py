@@ -77,9 +77,9 @@ def wall_x(x_coords, vel_x, vel_y, vel_z):
 
   # Random variables used to assign the new velocities to the particles:
   
-  R1 = af.randu(collided_right.size)
-  R2 = af.randu(collided_right.size)
-  R3 = af.randu(collided_right.size)
+  R1 = af.randu(af.Array.elements(collided_right))
+  R2 = af.randu(af.Array.elements(collided_right))
+  R3 = af.randu(af.Array.elements(collided_right))
   
   # 1e-12 has been subtracted so as to avoid errors in zonal computation
   # Using our methods for zonal computation, a particle at the right boundary, would be assigned to the zone beyond the wall
@@ -90,9 +90,9 @@ def wall_x(x_coords, vel_x, vel_y, vel_z):
   vel_y[collided_right] = np.sqrt(constant_multiply)*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R3)
   vel_z[collided_right] = np.sqrt(constant_multiply)*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R3)
 
-  R1 = af.randu(collided_left.size)
-  R2 = af.randu(collided_left.size)
-  R3 = af.randu(collided_left.size)
+  R1 = af.randu(af.Array.elements(collided_left))
+  R2 = af.randu(af.Array.elements(collided_left))
+  R3 = af.randu(af.Array.elements(collided_left))
 
   x_coords[collided_left] = left_boundary
 
@@ -111,9 +111,9 @@ def wall_y(y_coords, vel_x, vel_y, vel_z):
   collided_bot = af.algorithm.where(y_coords<bottom_boundary)
 
   # Random variables used to assign the new velocities to the particles:
-  R1 = af.randu(collided_top.size)
-  R2 = af.randu(collided_top.size)
-  R3 = af.randu(collided_top.size)
+  R1 = af.randu(af.Array.elements(collided_top))
+  R2 = af.randu(af.Array.elements(collided_top))
+  R3 = af.randu(af.Array.elements(collided_top))
   
   # 1e-12 has been subtracted so as to avoid errors in zonal computation
   y_coords[collided_top] = top_boundary - 1e-12
@@ -123,9 +123,9 @@ def wall_y(y_coords, vel_x, vel_y, vel_z):
   vel_y[collided_top] = af.arith.sqrt(-constant_multiply*af.arith.log(R1))*(-1)
   vel_z[collided_top] = np.sqrt(constant_multiply)*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R3)
 
-  R1 = af.randu(collided_bot.size)
-  R2 = af.randu(collided_bot.size)
-  R3 = af.randu(collided_bot.size)
+  R1 = af.randu(af.Array.elements(collided_bot))
+  R2 = af.randu(af.Array.elements(collided_bot))
+  R3 = af.randu(af.Array.elements(collided_bot))
 
   y_coords[collided_bot] = bottom_boundary
 
@@ -142,9 +142,9 @@ def wall_z(z_coords, vel_x, vel_y, vel_z):
   collided_back  = af.algorithm.where(z_coords<back_boundary)
 
   # Random variables used to assign the new velocities to the particles:
-  R1 = af.randu(collided_front.size)
-  R2 = af.randu(collided_front.size)
-  R3 = af.randu(collided_front.size)
+  R1 = af.randu(af.Array.elements(collided_front))
+  R2 = af.randu(af.Array.elements(collided_front))
+  R3 = af.randu(af.Array.elements(collided_front))
 
   # 1e-12 has been subtracted so as to avoid errors in zonal computation
   z_coords[collided_front] = front_boundary - 1e-12
@@ -154,9 +154,9 @@ def wall_z(z_coords, vel_x, vel_y, vel_z):
   vel_y[collided_front] = np.sqrt(constant_multiply)*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R3)
   vel_z[collided_front] = af.arith.sqrt(-constant_multiply*af.arith.log(R1))*(-1)
   
-  R1 = af.randu(collided_back.size)
-  R2 = af.randu(collided_back.size)
-  R3 = af.randu(collided_back.size)
+  R1 = af.randu(af.Array.elements(collided_back))
+  R2 = af.randu(af.Array.elements(collided_back))
+  R3 = af.randu(af.Array.elements(collided_back))
 
   z_coords[collided_back] = back_boundary
 

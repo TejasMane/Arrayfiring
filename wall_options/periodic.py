@@ -73,7 +73,7 @@ def wall_x(x_coords, vel_x, vel_y, vel_z):
 
   collided_right = af.algorithm.where(x_coords > right_boundary)
   collided_left  = af.algorithm.where(x_coords < left_boundary)
-
+  
   x_coords[collided_left]  = x_coords[collided_left]  + length_box_x 
   x_coords[collided_right] = x_coords[collided_right] - length_box_x
   
