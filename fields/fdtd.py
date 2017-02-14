@@ -1,6 +1,8 @@
 import numpy as np
 from wall_options.EM_periodic import periodic
 import params
+from scipy import signal
+import arrayfire as af
 
 """Here we shall re-assign values as set in params"""
 
@@ -29,6 +31,12 @@ T_initial          = params.T_initial
 wall_condition_x   = params.wall_condition_x
 wall_condition_y   = params.wall_condition_y
 wall_condition_z   = params.wall_condition_z
+forward_row        = params.forward_row
+forward_column     = params.forward_column
+backward_row       = params.backward_row
+backward_column    = params.backward_column
+identity           = params.identity
+
 
 if(wall_condition_x == "thermal"):
   T_left_wall  = params.T_left_wall
@@ -200,7 +208,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """ Number of grid points in the field's domain"""
 
-  (x_number_of_points,  y_number_of_points) = Ez.shape
+  (x_number_of_points,  y_number_of_points) = Ez.dims()
 
   """ number of grid zones from the input fields """
 
@@ -239,15 +247,17 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
                                   range(ghost_cells, y_number_of_points-ghost_cells)\
                                 )
 
-
-
   """  Updating the Magnetic fields   """
 
-  Bx_local[X_index, Y_index] = Bx_local[X_index, Y_index] - (dt_by_dy * (Ez_local[X_index + 1, Y_index] - Ez_local[X_index, Y_index]))
+  #Bx_local[X_index, Y_index] = Bx_local[X_index, Y_index] - (dt_by_dy * (Ez_local[X_index + 1, Y_index] - Ez_local[X_index, Y_index]))
+  
+  Bx_local += -dt_by_dy*(af.signal.convolve2_separable(forward_row, identity, Ez_local))
 
   # dBx/dt = -dEz/dy
 
-  By_local[X_index, Y_index] = By_local[X_index, Y_index] + (dt_by_dx * (Ez_local[X_index, Y_index + 1] - Ez_local[X_index, Y_index]))
+  #By_local[X_index, Y_index] = By_local[X_index, Y_index] + (dt_by_dx * (Ez_local[X_index, Y_index + 1] - Ez_local[X_index, Y_index]))
+
+  By_local += dt_by_dx*(af.signal.convolve2_separable(identity, forward_column, Ez_local))
 
   # dBy/dt = +dEz/dx
 
@@ -260,9 +270,13 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Updating the Electric field using the current too """
 
-  Ez_local[X_index, Y_index] = Ez_local[X_index, Y_index] + (  (dt_by_dx * (By_local[X_index, Y_index] - By_local[X_index, Y_index - 1]))\
-                                                             - (dt_by_dy * (Bx_local[X_index, Y_index] - Bx_local[X_index - 1, Y_index]))\
-                                                            ) + (dt*Jz[X_index, Y_index])
+  #Ez_local[X_index, Y_index] = Ez_local[X_index, Y_index] + (  (dt_by_dx * (By_local[X_index, Y_index] - By_local[X_index, Y_index - 1]))\
+                                                             #- (dt_by_dy * (Bx_local[X_index, Y_index] - Bx_local[X_index - 1, Y_index]))\
+                                                            #) + (dt*Jz[X_index, Y_index])
+
+  Ez_local +=   dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, By_local)) \
+              - dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bx_local)) \
+              + dt*Jz
 
   # dEz/dt = dBy/dx - dBx/dy
 
@@ -292,7 +306,7 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """ Number of grid points in the field's domain """
 
-  (x_number_of_points,  y_number_of_points) = Bz.shape
+  (x_number_of_points,  y_number_of_points) = Bz.dims()
 
   """ number of grid zones calculated from the input fields """
 
@@ -325,37 +339,34 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
   dt_by_dx = dt / (dx)
   dt_by_dy = dt / (dy)
 
-  """  Defining index grid for updating the fields  """
-
-  X_index, Y_index = np.meshgrid(range(ghost_cells, x_number_of_points-ghost_cells),\
-                                 range(ghost_cells, y_number_of_points-ghost_cells)\
-                                )
-
-
-
-
   """  Updating the Magnetic field  """
 
-  Bz_local[X_index, Y_index] = Bz_local[X_index, Y_index] - (   (dt_by_dx * (Ey_local[X_index, Y_index] - Ey_local[X_index, Y_index - 1]))\
-                                                              - (dt_by_dy * (Ex_local[X_index, Y_index] - Ex_local[X_index - 1, Y_index]))\
-                                                            )
+  #Bz_local[X_index, Y_index] = Bz_local[X_index, Y_index] - (   (dt_by_dx * (Ey_local[X_index, Y_index] - Ey_local[X_index, Y_index - 1]))- (dt_by_dy * (Ex_local[X_index, Y_index] - Ex_local[X_index - 1, Y_index]))
+                                                            #)
+
+  Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Ey_local)) \
+              + dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Ex_local))
 
   # dBz/dt = - ( dEy/dx - dEx/dy )
 
-  """  Implementing periodic boundary conditions using ghost cells  """
+  #Implementing periodic boundary conditions using ghost cells
 
   Bz_local = periodic(Bz_local, x_number_of_points, y_number_of_points, ghost_cells)
 
   """  Updating the Electric fields using the current too   """
 
-  Ex_local[X_index, Y_index] = Ex_local[X_index, Y_index] + (dt_by_dy * (Bz_local[X_index + 1, Y_index] - Bz_local[X_index, Y_index])) \
-                                                                      + (dt*Jx[X_index, Y_index])
+
+  #Ex_local[X_index, Y_index] = Ex_local[X_index, Y_index] + (dt_by_dy * (Bz_local[X_index + 1, Y_index] - Bz_local[X_index, Y_index]))+ (dt*Jx[X_index, Y_index])
+
+  Ex_local += dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Bz_local)) + Jx * dt
 
   # dEx/dt = + dBz/dy
-
-  Ey_local[X_index, Y_index] = Ey_local[X_index, Y_index] - (dt_by_dx * (Bz_local[X_index, Y_index + 1] - Bz_local[X_index, Y_index]))\
-                                                                      + (dt*Jy[X_index, Y_index])
-
+  #print('Ey before updating', Ey_local)
+  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Bz_local)) + Jy * dt
+  #print('Addition term for Ey', -dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Bz_local)))
+  #print('Ey is', Ey_local)
+  
+  #zzz = input('Whats up')
   # dEy/dt = - dBz/dx
 
   """  Implementing periodic boundary conditions using ghost cells  """

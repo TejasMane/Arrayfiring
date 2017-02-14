@@ -19,7 +19,7 @@ def bilinear_interpolate(x, y, x_grid, y_grid, F, ghost_cells, Lx, Ly):
   # Storing the field F in temperory variable
 
   F_function = F
-  n = (len(F_function[0, :]) - 1 - 2 * ghost_cells)  # number of zones
+  n = ((F_function[0, :].elements()) - 1 - 2 * ghost_cells)  # number of zones
 
   x_zone = int(n * np.float(x - x_grid[0])/Lx)  # indexing from zero itself
   y_zone = int(n * np.float(y - y_grid[0])/Ly)
@@ -34,13 +34,20 @@ def bilinear_interpolate(x, y, x_grid, y_grid, F, ghost_cells, Lx, Ly):
                   ]\
                )
 
+  A = af.to_array(A)
+
   # The 1D matrix for the points for interpolation
 
   point_to_calculated_for = np.matrix([[1], [x], [y], [x * y]])
 
+  point_to_calculated_for = af.to_array(point_to_calculated_for)
+
+
+
+
   # Calculating the coefficient matrix
 
-  b = (la.inv(A)).transpose() * point_to_calculated_for
+  b = (af.lapack.inverse(A)).T * point_to_calculated_for
 
   # assigning the values at the corner points at the grid cell
 
@@ -50,10 +57,10 @@ def bilinear_interpolate(x, y, x_grid, y_grid, F, ghost_cells, Lx, Ly):
   Q22 = F_function[y_zone + 1, x_zone + 1]
 
   Q = np.matrix([[Q11], [Q12], [Q21], [Q22]])
-
+  Q = af.to_array(Q)
   # Calculating the interpolated value
 
-  F_interpolated = np.float( b.transpose() * Q )
+  F_interpolated =  b.T * Q 
 
   return F_interpolated
 
