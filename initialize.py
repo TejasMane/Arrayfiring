@@ -2,6 +2,7 @@ import numpy as np
 from scipy.special import erfinv
 import h5py
 import params
+import arrayfire as af
 
 """Here we shall re-assign values as set in params"""
 
@@ -69,31 +70,34 @@ length_box_z     = params.length_box_z
 This file is used in providing the initial velocities and positions to the particles.
 The distribution of your choice may be obtained by modifying the options that have been 
 provided below. Although the choice of function must be changed from this file, the parameter 
-change must be made at params.py so that the same values are reflected across all the modules
+change may also be made at params.py
 """
 
 """ Initializing the positions for the particles """
 
-initial_position_x = left_boundary   + length_box_x * np.random.rand(no_of_particles)
-initial_position_y = bottom_boundary + length_box_y * np.random.rand(no_of_particles)
-initial_position_z = back_boundary   + length_box_z * np.random.rand(no_of_particles)
+initial_position_x = left_boundary   + length_box_x * af.randu(no_of_particles)
+initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
+initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
 
 """ Initializing velocities to the particles """
 
 # Declaring the random variable which shall be used to sample velocities:
-R1 = np.random.rand(no_of_particles)
-R2 = np.random.rand(no_of_particles)
-R3 = np.random.rand(no_of_particles)
+R1 = af.randu(no_of_particles)
+R2 = af.randu(no_of_particles)
+R3 = af.randu(no_of_particles)
+R4 = af.randu(no_of_particles)
 
 # Sampling velocities corresponding to Maxwell-Boltzmann distribution at T_initial
-initial_vel_x = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)*erfinv(2*R1-1)
-initial_vel_y = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)*erfinv(2*R2-1)
-initial_vel_z = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)*erfinv(2*R3-1)
+# For this we shall be using the Box-Muller transformation
+constant_multiply  = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)
+initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
+initial_velocity_y = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R1)
+initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
 
 """ Time parameters for the simulation """
 
 # Any time parameter changes that need to be made for the simulation should be edited here:
-box_crossing_time_scale = (length_box_x/np.max(initial_vel_x))
+box_crossing_time_scale = (length_box_x/np.max(initial_velocity_x))
 final_time              = 20 * box_crossing_time_scale
 dt                      = 0.001 * box_crossing_time_scale
 time                    = np.arange(0, final_time, dt)
@@ -121,18 +125,18 @@ if(fields_enabled == "true"):
 """ Writing the data to a file which can be accessed by a solver"""
 
 h5f = h5py.File('data_files/initial_conditions/initial_data.h5', 'w')
-h5f.create_dataset('time',          data = time)
+h5f.create_dataset('time',                   data = time)
 h5f.create_dataset('x_coords', data = initial_position_x)
 h5f.create_dataset('y_coords', data = initial_position_y)
 h5f.create_dataset('z_coords', data = initial_position_z)
-h5f.create_dataset('vel_x',    data = initial_vel_x)
-h5f.create_dataset('vel_y',    data = initial_vel_y)
-h5f.create_dataset('vel_z',    data = initial_vel_z)
+h5f.create_dataset('vel_x',    data = initial_velocity_x)
+h5f.create_dataset('vel_y',    data = initial_velocity_y)
+h5f.create_dataset('vel_z',    data = initial_velocity_z)
 
 if(fields_enabled == "true"):
   h5f.create_dataset('x_center',      data = x_center)
   h5f.create_dataset('y_center',      data = y_center)
-  h5f.create_dataset('x_right',       data = x_right)
-  h5f.create_dataset('y_top',         data = y_top)
+  h5f.create_dataset('x_right',        data = x_right)
+  h5f.create_dataset('y_top',            data = y_top)
 
 h5f.close()

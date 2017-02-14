@@ -43,17 +43,19 @@ elif(collision_operator == "montecarlo"):
 
 fields_enabled   = "true"
 
+import arrayfire as af
 if(fields_enabled == "true"):
   spread          = 0.1     # Shall be used to assign Gaussian
   ghost_cells     = 1       # Refers to the number of cells beyond the physical domain(usually set to 1)
   speed_of_light  = 1
   charge          = 1 # 1e-10   # Charge of each individual particle in the simulation
-  x_zones_field   = 100     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
-  y_zones_field   = 100     # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
-  forward_row     = [[1], [-1], [0]]
-  forward_column  = [[1, -1, 0]]
-  backward_row    = [[0], [1], [-1]]
-  backward_column = [[0, 1, -1]]
+  x_zones_field   = 5     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
+  y_zones_field   = 5     # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
+  forward_row     = af.Array([1, -1, 0])
+  forward_column  = af.Array([1, -1, 0])
+  backward_row    = af.Array([0, 1, -1])
+  backward_column = af.Array([0, 1, -1])
+  identity        = af.Array([0, 1, 0] )
 
 """
 [[1, -1, 0]] = data[col +1] - data[col]
