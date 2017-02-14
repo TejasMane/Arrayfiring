@@ -72,21 +72,39 @@ length_box_z     = params.length_box_z
 # This would provide us our initial conditions(at t = 0) for the simulation
 
 h5f           = h5py.File('data_files/initial_conditions/initial_data.h5', 'r')
+
 x_initial     = h5f['x_coords'][:]
+x_initial     = af.to_array(x_initial)
+
 y_initial     = h5f['y_coords'][:]
+y_initial     = af.to_array(y_initial)
+
 vel_x_initial = h5f['vel_x'][:]
+vel_x_initial = af.to_array(vel_x_initial)
+
 vel_y_initial = h5f['vel_y'][:]
+vel_y_initial = af.to_array(vel_y_initial)
+
 time          = h5f['time'][:]
+
 x_center      = h5f['x_center'][:]
+x_center      = af.to_array(x_center)
+
 y_center      = h5f['y_center'][:]
-x_center = af.to_array(x_center)
-y_center = af.to_array(y_center)
+y_center      = af.to_array(y_center)
+
 x_right       = h5f['x_right'][:]
+x_right        = af.to_array(x_center)
+
 y_top         = h5f['y_top'][:]
-x_right = af.to_array(x_center)
-y_top   = af.to_array(y_center)
+y_top         = af.to_array(y_center)
+
 z_initial     = h5f['z_coords'][:]
+z_initial     = af.to_array(z_initial)
+
 vel_z_initial = h5f['vel_z'][:]
+vel_z_initial     = af.to_array(vel_z_initial)
+
 h5f.close()
 
 # Considering a non-adaptive time-stepping, the time-step size for the entire simulation would be
@@ -97,14 +115,14 @@ dt = time[1] - time[0]
 # These variables will be written to file at the end of every 100 time-steps
 # This frequency of writing to the disc may be changed below
 
-momentum_x     = np.zeros(time.size)
-momentum_y     = np.zeros(time.size)
-momentum_z     = np.zeros(time.size)
-kinetic_energy = np.zeros(time.size)
-pressure       = np.zeros(time.size)
-heatflux_x     = np.zeros(time.size)
-heatflux_y     = np.zeros(time.size)
-heatflux_z     = np.zeros(time.size)
+#momentum_x     = np.zeros(time.size)
+#momentum_y     = np.zeros(time.size)
+#momentum_z     = np.zeros(time.size)
+#kinetic_energy = np.zeros(time.size)
+#pressure       = np.zeros(time.size)
+#heatflux_x     = np.zeros(time.size)
+#heatflux_y     = np.zeros(time.size)
+#heatflux_z     = np.zeros(time.size)
 
 if(collision_operator == "potential-based"):
   potential_energy = np.zeros(time.size)
@@ -154,27 +172,59 @@ if(collision_operator == "collisionless"):
   
 # Now we shall proceed to evolve the system with time:
 
+def zone_finder(x, y, x_grid, y_grid, Lx, Ly, ghost_cells):
 
-from fields.fdtd import fdtd
-from fields.interpolator import bilinear_interpolate
-from integrators.magnetic_verlet import integrator
+  x_zone = af.data.constant(0, x.elements(), dtype=af.Dtype.f64)
+  y_zone = af.data.constant(0, y.elements(), dtype=af.Dtype.f64)
+  x_frac = af.data.constant(0, x.elements(), dtype=af.Dtype.f64)
+  y_frac = af.data.constant(0, x.elements(), dtype=af.Dtype.f64)
+  
+  
+  nx = (x_grid.elements() - 1 - 2 * ghost_cells)  # number of zones
+  dx = Lx/nx
+  
+  ny = (y_grid.elements() - 1 - 2 * ghost_cells)  # number of zones
+  dy = Ly/ny
+  
+  for i in range(x.elements()):
+    
+
+    
+    x_zone[i] = int(af.sum(nx * af.abs(x[i] - x_grid[0]))/Lx)  # indexing from zero itself
+    y_zone[i] = int(af.sum(ny * af.abs(y[i] - y_grid[0]))/Ly)  # indexing from zero itself
+    x_frac[i] = (x[i]-x_grid[af.sum(x_zone[i])])/dx
+    y_frac[i] = (y[i]-y_grid[af.sum(y_zone[i])])/dy
+  
+  return af.join(1, x_zone, y_zone),af.join(1, x_frac, y_frac)
 
 
 
 
 
 if(fields_enabled == "true"):
-  Ez = af.data.constant(0,x_center.elements(),y_center.elements())
-  Bx = af.data.constant(0,x_center.elements(),y_center.elements())
-  By = af.data.constant(0,x_center.elements(),y_center.elements())
+  from fields.fdtd import fdtd
+  from integrators.magnetic_verlet import integrator
+  from fields.current_depositor import dcd, current_b0_depositor, charge_b0_depositor
+  Ez = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Bx = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  By = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
 
-  Bz = af.data.constant(0,x_center.elements(),y_center.elements())
-  Ex = af.data.constant(0,x_center.elements(),y_center.elements())
-  Ey = af.data.constant(0,x_center.elements(),y_center.elements())
+  Bz = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Ex = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Ey = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  
+  Ez_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+  Bx_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+  By_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
 
-  Jx = af.data.constant(0,x_center.elements(),y_center.elements())
-  Jy = af.data.constant(0,x_center.elements(),y_center.elements())
-  Jz = af.data.constant(0,x_center.elements(),y_center.elements())
+  Bz_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+  Ex_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+  Ey_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+
+
+  Jx = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Jy = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Jz = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
 
   X_center_physical = af.tile(af.reorder(x_center[ghost_cells:-ghost_cells],1),y_center[ghost_cells:-ghost_cells].elements(),1)
 
@@ -202,13 +252,13 @@ for time_index,t0 in enumerate(time):
   if(time_index == time.size-1):
     break
 
-  #if(time_index!=0):
-    #x_initial     = old_x
-    #y_initial     = old_y
-    #z_initial     = old_z
-    #vel_x_initial = old_vel_x
-    #vel_y_initial = old_vel_y
-    #vel_z_initial = old_vel_z
+  if(time_index!=0):
+    x_initial     = old_x
+    y_initial     = old_y
+    z_initial     = old_z
+    vel_x_initial = old_vel_x
+    vel_y_initial = old_vel_y
+    vel_z_initial = old_vel_z
 
   """ 
   We shall use the integrator that accounts only for collisions in the case of potential-based model
@@ -228,21 +278,18 @@ for time_index,t0 in enumerate(time):
 
     #from fields.current_depositor import current_b0_depositor, dcd
 
-    #coords = np.concatenate([x_initial, y_initial, z_initial])
-    #vels   = np.concatenate([vel_x_initial, vel_y_initial, vel_z_initial])
+    coords = af.join(0, x_initial, y_initial, z_initial)
+    vels   = af.join(0, vel_x_initial, vel_y_initial, vel_z_initial)
 
-    #Jx, Jy, Jz = dcd(charge, no_of_particles, coords-vels*(dt/2),\
-                     #coords, x_center, y_center, current_b0_depositor, ghost_cells,\
-                     #length_box_x, length_box_y, dx, dy \
-                    #)
+    Jx, Jy, Jz = dcd(charge, no_of_particles, coords-vels*(dt/2),\
+                     coords, x_center, y_center, current_b0_depositor, ghost_cells,\
+                     length_box_x, length_box_y, dx, dy \
+                    )
 
-    Jx,Jy,Jz = 0, 0, 0
-    
-    print('Before Updating ', Ey)
-    
+    #Jx,Jy,Jz = 0, 0, 0
+
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
-    
-    
+
     ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
 
     ## E at ndt and B averaged at ndt to push v at (n-0.5)dt
@@ -257,38 +304,34 @@ for time_index,t0 in enumerate(time):
 
     #"""
     
-    initial_conditions = np.concatenate([x_initial, y_initial])
+    #initial_conditions = np.concatenate([x_initial, y_initial])
     
-    Ex_particle =  bilinear_interpolate( x = [initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_center,\
-                                          y_grid=y_top, F=Ex, ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y\
-                                       )\
-                          
+    if(time_index==0):
+      
+      zones_Ex, fracs_Ex = zone_finder(x_initial, y_initial, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Ey, fracs_Ey = zone_finder(x_initial, y_initial, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_Ez, fracs_Ez = zone_finder(x_initial, y_initial, x_center, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bx, fracs_Bx = zone_finder(x_initial, y_initial, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_By, fracs_By = zone_finder(x_initial, y_initial, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bz, fracs_Bz = zone_finder(x_initial, y_initial, x_right, y_top, length_box_x, length_box_y, ghost_cells)
+    else:
+      zones_Ex, fracs_Ex = zone_finder(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Ey, fracs_Ey = zone_finder(x_coords, y_coords, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_Ez, fracs_Ez = zone_finder(x_coords, y_coords, x_center, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bx, fracs_Bx = zone_finder(x_coords, y_coords, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_By, fracs_By = zone_finder(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bz, fracs_Bz = zone_finder(x_coords, y_coords, x_right, y_top, length_box_x, length_box_y, ghost_cells)
+      
+      
+    for i in range(no_of_particles):
+      Ex_particle[i] = af.signal.approx2(Ex[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0]) + 1,  af.sum(zones_Ex[i,1]):af.sum(zones_Ex[i,1]) + 1], fracs_Ex[i,1], fracs_Ex[i,0])
+      Ey_particle[i] = af.signal.approx2(Ey[af.sum(zones_Ey[i,0]):af.sum(zones_Ey[i,0])+1, af.sum(zones_Ey[i,1]):af.sum(zones_Ey[i,1])+1], fracs_Ey[i,1], fracs_Ey[i,0])
+      Ez_particle[i] = af.signal.approx2(Ez[af.sum(zones_Ez[i,0]):af.sum(zones_Ez[i,0])+1, af.sum(zones_Ez[i,1]):af.sum(zones_Ez[i,1])+1], fracs_Ez[i,1], fracs_Ez[i,0])
+      Bx_particle[i] = af.signal.approx2(Bx[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0])+1, af.sum(zones_Bx[i,1]):af.sum(zones_Bx[i,1])+1], fracs_Bx[i,1], fracs_Bx[i,0])
+      By_particle[i] = af.signal.approx2(By[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0])+1, af.sum(zones_By[i,1]):af.sum(zones_By[i,1])+1], fracs_By[i,1], fracs_By[i,0])
+      Bz_particle[i] = af.signal.approx2(Bz[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0])+1, af.sum(zones_Bz[i,1]):af.sum(zones_Bz[i,1])+1], fracs_Bz[i,1], fracs_Bz[i,0])
 
-    Ey_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_right,\
-                                                  y_grid=y_top, F=Ey, ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y\
-                                                )\
-                          )
-
-    Ez_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_center,\
-                                                  y_grid=y_top, F=Ez, ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y\
-                                                )\
-                          )
-
-    Bx_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_right,\
-                                                  y_grid=y_top, F=((Bx+Bx_updated)/2), ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y\
-                                                )\
-                          )
-
-    By_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_center,\
-                                                  y_grid=y_top, F=((By+By_updated)/2), ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y\
-                                                )\
-                          )
-
-    Bz_particle = np.array( bilinear_interpolate( x=[initial_conditions[:no_of_particles]], y=[initial_conditions[no_of_particles:2*no_of_particles]], x_grid=x_right,\
-                                                  y_grid=y_top, F=((Bz+Bz_updated)/2), ghost_cells = ghost_cells, Lx = length_box_x, Ly = length_box_y\
-                                                )\
-                          )
-
+    
     
     Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
 
@@ -299,13 +342,13 @@ for time_index,t0 in enumerate(time):
                                                                     )
 
   
-  (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
-  (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
-  (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
+  #(x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
+  #(y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
+  #(z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
 
-  (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \
-                                                                           vel_x_initial, vel_y_initial, vel_z_initial, dt\
-                                                                          )
+  #(x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \
+                                                                           #vel_x_initial, vel_y_initial, vel_z_initial, dt\
+                                                                          #)
 
   ## Here, we shall set assign the values to variables which shall be used as a starting point for the next time-step
   old_x = x_coords
@@ -326,7 +369,7 @@ for time_index,t0 in enumerate(time):
     #particle_zone    = x_zones * particle_yzone + particle_xzone
     #zonecount        = np.bincount(particle_zone)
     
-    #temperature_spatial = np.zeros(zonecount.size)
+    #temperature_spatial = np.zeros(zonecount.elements())
   
     #for i in range(x_zones*y_zones):
       #indices = np.where(particle_zone == i)[0]
