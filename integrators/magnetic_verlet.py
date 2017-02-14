@@ -2,6 +2,7 @@ import numpy as np
 from scipy.special import erfinv
 import h5py
 import params
+import arrayfire as af
 
 """Here we shall re-assign values as set in params"""
 
@@ -23,7 +24,7 @@ elif(collision_operator == "potential-based"):
 elif(collision_operator == "montecarlo"):
   x_zones_montecarlo = params.x_zones_montecarlo
   y_zones_montecarlo = params.y_zones_montecarlo
-
+  
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
 T_initial          = params.T_initial
@@ -74,49 +75,36 @@ Add details here
 
 def integrator(x_coords, y_coords, z_coords, vel_x, vel_y, vel_z, dt, Ex, Ey, Ez, Bx, By, Bz):
 
-  x   = x_coords
-  y   = y_coords
-  z   = z_coords
-  v_x = vel_x
-  v_y = vel_y
-  v_z = vel_z
+  vel_x_minus = vel_x + (charge * Ex * dt) / (2 * mass_particle)
+  vel_y_minus = vel_y + (charge * Ey * dt) / (2 * mass_particle)
+  vel_z_minus = vel_z + (charge * Ez * dt) / (2 * mass_particle)
 
-  Ex = Ex
-  Ey = Ey
-  Ez = Ez
-  Bx = Bx
-  By = By
-  Bz = Bz
-
-  v_x_minus = v_x + (charge * Ex * dt) / (2 * mass_particle)
-  v_y_minus = v_y + (charge * Ey * dt) / (2 * mass_particle)
-  v_z_minus = v_z + (charge * Ez * dt) / (2 * mass_particle)
-
+  
   t_magx    = (charge * Bx * dt) / (2 * mass_particle)
   t_magy    = (charge * By * dt) / (2 * mass_particle)
   t_magz    = (charge * Bz * dt) / (2 * mass_particle)
 
-  vminus_cross_t_x = (v_y_minus * t_magz) - (v_z_minus * t_magy)
-  vminus_cross_t_y = -((v_x_minus * t_magz) - (v_z_minus * t_magx))
-  vminus_cross_t_z = (v_x_minus * t_magy) - (v_y_minus * t_magx)
+  vminus_cross_t_x =  (vel_y_minus * t_magz) - (vel_z_minus * t_magy)
+  vminus_cross_t_y = -(vel_x_minus * t_magz) + (vel_z_minus * t_magx)
+  vminus_cross_t_z =  (vel_x_minus * t_magy) - (vel_y_minus * t_magx)
 
-  v_dashx = v_x_minus + vminus_cross_t_x
-  v_dashy = v_y_minus + vminus_cross_t_y
-  v_dashz = v_z_minus + vminus_cross_t_z
+  vel_dashx = vel_x_minus + vminus_cross_t_x
+  vel_dashy = vel_y_minus + vminus_cross_t_y
+  vel_dashz = vel_z_minus + vminus_cross_t_z
 
-  t_mag = np.sqrt(t_magx ** 2 + t_magy ** 2 + t_magz ** 2)
+  t_mag = af.arith.sqrt(t_magx ** 2 + t_magy ** 2 + t_magz ** 2)
 
-  s_x = (2 * t_magx) / (1 + abs(t_mag ** 2))
-  s_y = (2 * t_magy) / (1 + abs(t_mag ** 2))
-  s_z = (2 * t_magz) / (1 + abs(t_mag ** 2))
+  s_x = (2 * t_magx) / (1 + af.arith.abs(t_mag ** 2))
+  s_y = (2 * t_magy) / (1 + af.arith.abs(t_mag ** 2))
+  s_z = (2 * t_magz) / (1 + af.arith.abs(t_mag ** 2))
 
-  v_x_plus = v_x_minus + ((v_dashy * s_z) - (v_dashz * s_y))
-  v_y_plus = v_y_minus + -((v_dashx * s_z) - (v_dashz * s_x))
-  v_z_plus = v_z_minus + ((v_dashx * s_y) - (v_dashy * s_x))
+  vel_x_plus = vel_x_minus + ((vel_dashy * s_z) - (vel_dashz * s_y))
+  vel_y_plus = vel_y_minus - ((vel_dashx * s_z) - (vel_dashz * s_x))
+  vel_z_plus = vel_z_minus + ((vel_dashx * s_y) - (vel_dashy * s_x))
 
-  vel_x_new  = v_x_plus + (charge * Ex * dt) / (2 * mass_particle)
-  vel_y_new  = v_y_plus + (charge * Ey * dt) / (2 * mass_particle)
-  vel_z_new  = v_z_plus + (charge * Ez * dt) / (2 * mass_particle)
+  vel_x_new  = vel_x_plus + (charge * Ex * dt) / (2 * mass_particle)
+  vel_y_new  = vel_y_plus + (charge * Ey * dt) / (2 * mass_particle)
+  vel_z_new  = vel_z_plus + (charge * Ez * dt) / (2 * mass_particle)
 
   # Using v at (n+0.5) dt to push x at (n)dt
 
