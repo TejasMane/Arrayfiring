@@ -2,6 +2,8 @@ import params
 import numpy as np
 from wall_options.EM_periodic import periodic
 from fields.fdtd import fdtd
+import arrayfire as af
+
 
 """Here we shall re-assign values as set in params"""
 
@@ -85,31 +87,36 @@ length_box_z     = params.length_box_z
 """Charge Deposition for B0 splines (Have to vectorize)"""
 
 def charge_b0_depositor(x, y, x_grid, y_grid, J, ghost_cells, Lx, Ly):
+  x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.f64)
+  y_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.f64)
+  charge_by_dxdy = af.data.constant(0,x.elements(), dtype=af.Dtype.f64)
+  
+  for i in range(x.elements()):
+    n = ((x_grid.elements) - 1 - 2 * ghost_cells)  # number of zones
+
+    dx = Lx/nx
+    dy = Ly/ny
+
+    x_zone = int(af.sum(nx * (x[i] - x_grid[0]))/Lx)  # indexing from zero itself
+    y_zone = int(af.sum(ny * (y[i] - y_grid[0]))/Ly)
+
+    if(af.arith.abs(x[i]-x_grid[x_zone])<af.arith.abs(x[i]-x_grid[x_zone + 1])):
+      x_current_zone[i] = x_zone
+    else:
+      x_current_zone[i] = x_zone +1
 
 
-  n = (len(x_grid) - 1 - 2 * ghost_cells)  # number of zones
-
-  dx = Lx/n
-  dy = Ly/n
-
-  x_zone = int(n * np.float(x - x_grid[0])/Lx)  # indexing from zero itself
-  y_zone = int(n * np.float(y - y_grid[0])/Ly)
-
-  if(abs(x-x_grid[x_zone])<abs(x-x_grid[x_zone + 1])):
-    x_current_zone = x_zone
-  else:
-    x_current_zone = x_zone +1
-
-
-  if(abs(y - y_grid[y_zone])<abs(y - y_grid[y_zone + 1])):
-    y_current_zone = y_zone
-  else:
-    y_current_zone = y_zone +1
-
+    if(af.arith.abs(y[i] - y_grid[y_zone])<af.arith.abs(y[i] - y_grid[y_zone + 1])):
+      y_current_zone[i] = y_zone
+    else:
+      y_current_zone[i] = y_zone +1
+    
+    charge_by_dxdy[i] = charge[i]/(dx*dy)
+    
   return y_current_zone,x_current_zone,((charge/(dx*dy)))
 
 
-charge_b0_depositor = np.vectorize(charge_b0_depositor, excluded=(['x_grid', 'y_grid', 'J','ghost_cells', 'Lx', 'Ly']))
+#charge_b0_depositor = np.vectorize(charge_b0_depositor, excluded=(['x_grid', 'y_grid', 'J','ghost_cells', 'Lx', 'Ly']))
 
 # Example of usage Charge depositor
 
@@ -134,28 +141,38 @@ charge_b0_depositor = np.vectorize(charge_b0_depositor, excluded=(['x_grid', 'y_
 
 def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
 
+  x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.f64)
+  y_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.f64)
+  current_by_dxdy = af.data.constant(0,x.elements(), dtype=af.Dtype.f64)
 
-  n = (len(x_grid) - 1 - 2 * ghost_cells)  # number of zones
+  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells)  # number of zones
+  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells)  # number of zones
 
-  dx = Lx/n
-  dy = Ly/n
-  x_zone = int(n * np.float(x - x_grid[0])/Lx)  # indexing from zero itself
-  y_zone = int(n * np.float(y - y_grid[0])/Ly)
+  dx = Lx/nx
+  dy = Ly/ny
 
-  if(abs(x-x_grid[x_zone])<abs(x-x_grid[x_zone + 1])):
-    x_current_zone = x_zone
-  else:
-    x_current_zone = x_zone +1
 
-  if(abs(y - y_grid[y_zone])<abs(y - y_grid[y_zone + 1])):
-    y_current_zone = y_zone
-  else:
-    y_current_zone = y_zone +1
 
+  for i in range(x.elements()):
+
+    x_zone = int(af.sum(nx * (x[i] - x_grid[0]))/Lx)  # indexing from zero itself
+    y_zone = int(af.sum(ny * (y[i] - y_grid[0]))/Ly)
+
+    if(af.abs(x[i]-x_grid[x_zone])<af.abs(x[i]-x_grid[x_zone + 1])):
+      x_current_zone[i] = x_zone
+    else:
+      x_current_zone[i] = x_zone +1
+
+    if(af.abs(y[i] - y_grid[y_zone])<af.abs(y[i] - y_grid[y_zone + 1])):
+      y_current_zone[i] = y_zone
+    else:
+      y_current_zone[i] = y_zone +1
+    current_by_dxdy = ((charge/(dx*dy))*velocity_required[i])
+    
   return y_current_zone,x_current_zone,((charge/(dx*dy))*velocity_required)
 
 
-current_b0_depositor = np.vectorize(current_b0_depositor, excluded=(['charge','x_grid', 'y_grid', 'ghost_cells', 'Lx', 'Ly']))
+#current_b0_depositor = np.vectorize(current_b0_depositor, excluded=(['charge','x_grid', 'y_grid', 'ghost_cells', 'Lx', 'Ly']))
 
 # Example of usage Current depositor
 
@@ -176,8 +193,6 @@ current_b0_depositor = np.vectorize(current_b0_depositor, excluded=(['charge','x
 # print('The i shape ', i.shape)
 # print('The i  first element ', i[0,0])
 
-
-
 # def fun(f):
 #
 #
@@ -194,8 +209,6 @@ current_b0_depositor = np.vectorize(current_b0_depositor, excluded=(['charge','x
 #
 # print(fun(current_b0_depositor))
 
-
-
 def dcd(charge, no_of_particles, positions_plus_half ,velocities_plus_half, x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy):
 
   x_right_grid = x_center_grid + dx
@@ -208,39 +221,32 @@ def dcd(charge, no_of_particles, positions_plus_half ,velocities_plus_half, x_ce
   velocities_y = velocities_plus_half[no_of_particles:2*no_of_particles]
   velocities_z = velocities_plus_half[2*no_of_particles:3*no_of_particles]
 
+  Jx = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+  Jy = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+  Jz = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
 
-  Jx = np.zeros((len(x_center_grid), len(y_center_grid)), dtype=np.float)
-  Jy = np.zeros((len(x_center_grid), len(y_center_grid)), dtype=np.float)
-  Jz = np.zeros((len(x_center_grid), len(y_center_grid)), dtype=np.float)
-
-
-  Jx_x_indice, Jx_y_indices, Jx_values_at_these_indices = shape_function(   charge = charge,x = [positions_x], y = [positions_y], velocity_required = [velocities_x],\
-                                                                            x_grid = x_right_grid, y_grid = y_center_grid,\
-                                                                            ghost_cells = ghost_cells,Lx =Lx, Ly= Ly\
+  Jx_x_indice, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
+                                                                          x_right_grid, y_center_grid,\
+                                                                          ghost_cells, Lx, Ly\
                                                                         )
 
-
   for i in range(no_of_particles):
-    Jx[Jx_x_indice[0,i], Jx_y_indices[0,i]] = Jx_values_at_these_indices[0,i]
+    Jx[af.sum(Jx_x_indice[0,i]), af.sum(Jx_y_indices[0,i])] = Jx_values_at_these_indices[0,i]
 
-  Jy_x_indice, Jy_y_indices, Jy_values_at_these_indices = shape_function(   charge = charge,x = [positions_x], y = [positions_y], velocity_required = [velocities_y],\
-                                                                            x_grid = x_center_grid, y_grid = y_top_grid,\
-                                                                            ghost_cells = ghost_cells,Lx =Lx, Ly= Ly\
+  Jy_x_indice, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
+                                                                          x_center_grid, y_top_grid,\
+                                                                          ghost_cells, Lx, Ly\
                                                                         )
 
-
   for i in range(no_of_particles):
-    Jy[Jy_x_indice[0,i], Jy_y_indices[0,i]] = Jy_values_at_these_indices[0,i]
+    Jy[af.sum(Jy_x_indice[0,i]), af.sum(Jy_y_indices[0,i])] = Jy_values_at_these_indices[0,i]
 
-
-
-  Jz_x_indice, Jz_y_indices, Jz_values_at_these_indices = shape_function(   charge = charge,x = [positions_x], y = [positions_y], velocity_required = [velocities_z],\
-                                                                            x_grid = x_center_grid, y_grid = y_center_grid,\
-                                                                            ghost_cells = ghost_cells,Lx =Lx, Ly= Ly\
+  Jz_x_indice, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
+                                                                          x_center_grid, y_center_grid,\
+                                                                          ghost_cells, Lx, Ly\
                                                                         )
 
-
   for i in range(no_of_particles):
-    Jy[Jz_x_indice[0,i], Jz_y_indices[0,i]] = Jz_values_at_these_indices[0,i]
+    Jy[af.sum(Jz_x_indice[0,i]), af.sum(Jz_y_indices[0,i])] = Jz_values_at_these_indices[0,i]
 
   return Jx, Jy, Jz
