@@ -22,7 +22,10 @@ def zone_finder(x, y, x_grid, y_grid, Lx, Ly, ghost_cells):
   x_frac = (x - x_grid[x_zone])/dx
   y_frac = (y - y_grid[y_zone])/dy
   #print('3', timer.time()-s)
-  return af.join(1, x_zone, y_zone),af.join(1, x_frac, y_frac)
+
+  #af.eval(x_zone, y_zone)
+  #af.eval(x_frac, y_frac)
+  return x_zone, y_zone, x_frac, y_frac
 
 
 #def zone_finder(x, y, x_grid, y_grid, Lx, Ly, ghost_cells):

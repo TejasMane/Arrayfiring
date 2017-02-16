@@ -3,8 +3,7 @@ import numpy as np
 from wall_options.EM_periodic import periodic
 from fields.fdtd import fdtd
 import arrayfire as af
-
-
+import time as timer
 """Here we shall re-assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
@@ -112,7 +111,7 @@ def charge_b0_depositor(x, y, x_grid, y_grid, J, ghost_cells, Lx, Ly):
       y_charge_zone[i] = y_zone +1
     
     charge_by_dxdy[i] = charge[i]/(dx*dy)
-    
+
   return y_charge_zone, x_charge_zone, charge_by_dxdy
 
 
@@ -192,30 +191,44 @@ def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
 
   dx = Lx/nx
   dy = Ly/ny
-  
+  startcb0 = timer.time()
   x_zone = af.data.constant(0, x.elements(), dtype=af.Dtype.u32)
   y_zone = af.data.constant(0, y.elements(), dtype=af.Dtype.u32)
-  
+
   x_zone = (((nx * af.abs(x - af.sum(x_grid[0])))/Lx).as_type(af.Dtype.u32))
   y_zone = (((ny * af.abs(y - af.sum(y_grid[0])))/Ly).as_type(af.Dtype.u32))
-
+  #print('\n\n\n Inside the depositer 1', timer.time()-startcb0)
   indices = af.where(af.abs(x-x_grid[x_zone])<af.abs(x-x_grid[x_zone + 1]))
-  
+  #print('Inside the depositer 2', timer.time()-startcb0)
   if(indices.elements()>0):
     x_current_zone[indices] = x_zone[indices]
+  #print('Inside the depositer 3', timer.time()-startcb0)
   indices = af.where(af.abs(x-x_grid[x_zone])>=af.abs(x-x_grid[x_zone + 1]))
+  #print('Inside the depositer 4', timer.time()-startcb0)
   if(indices.elements()>0):
     x_current_zone[indices] = (x_zone[indices] + 1).as_type(af.Dtype.u32)
-
+  #print('Inside the depositer 5', timer.time()-startcb0)
   indices = af.where(af.abs(y - y_grid[y_zone])<af.abs(y - y_grid[y_zone + 1]))
+  #print('Inside the depositer 6', timer.time()-startcb0)
   if(indices.elements()>0):
     y_current_zone[indices] = y_zone[indices]
+  #print('Inside the depositer 7', timer.time()-startcb0)
   indices = af.where(af.abs(y - y_grid[y_zone])>=af.abs(y - y_grid[y_zone + 1]))
+  #print('Inside the depositer 8', timer.time()-startcb0)
   if(indices.elements()>0):
     y_current_zone[indices] = (y_zone[indices] +1).as_type(af.Dtype.u32)
-    
+  #print('Inside the depositer 9', timer.time()-startcb0)
     
   current_by_dxdy = ((charge/(dx*dy))*velocity_required)
+
+  #print('x input is ',x)
+  #print('x_grid is ', x_grid)
+  #print('x_zone is ', x_current_zone)
+  #print('y input is ',y)
+  #print('y_grid is ', y_grid)
+  #print('y_zone is ', y_current_zone)
+  #af.eval(y_current_zone, x_current_zone)
+  #af.eval(current_by_dxdy)
   return y_current_zone, x_current_zone, current_by_dxdy
 
 
@@ -276,43 +289,55 @@ def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
 #
 # print(fun(current_b0_depositor))
 
-def dcd(charge, no_of_particles, positions_plus_half ,velocities_plus_half, x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy):
+def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velocities_x, velocities_y, velocities_z, x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy):
 
   x_right_grid = x_center_grid + dx/2
   y_top_grid = y_center_grid + dy/2
   #print('positions_plus_half elements', positions_plus_half)
-  
+  startdcd = timer.time()
   #print('x_grid entering dcd is ',x_center_grid)
-  positions_x = positions_plus_half[:no_of_particles]
-  positions_y = positions_plus_half[no_of_particles:2*no_of_particles]
-
-  velocities_x = velocities_plus_half[:no_of_particles]
-  velocities_y = velocities_plus_half[no_of_particles:2*no_of_particles]
-  velocities_z = velocities_plus_half[2*no_of_particles:3*no_of_particles]
 
   Jx = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
   Jy = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
   Jz = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-
-  Jx_x_indice, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
+  #print('\n\n\n DCD START TIME ', timer.time()-startdcd)
+  Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
                                                                           x_right_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                         )
+  #print('After Getting the zones and stuff on Jx', timer.time()-startdcd)
+  #print('Jx_x_indices are ', (Jx_x_indices))
+  #print('Jx_y_indices are ', (Jx_y_indices))
+  #print('Jx_values_at_these_indices are ', (Jx_y_indices))
+  #print('Before Assigning currents on  Jx', timer.time()-startdcd)
+  for i in range(no_of_particles):
+    Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] = Jx_values_at_these_indices[i]
+  #print('After Assigning currents on  Jx', timer.time()-startdcd)
+  #print('for loop Jx = ', Jx)
+  #print('INDICES ', Jx_x_indices, Jx_y_indices)
+  #print('trial ', Jx[Jx_x_indices, Jx_y_indices])
+  #Jx[Jx_x_indices, Jx_y_indices] = Jx_values_at_these_indices
+  #print('Vectorized Jx = ', Jx)
 
-  Jx[af.sum(Jx_x_indice[0,:]), af.sum(Jx_y_indices[0,:])] = Jx_values_at_these_indices[0,:]
-
-  Jy_x_indice, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
+  #print('Before Jy', timer.time()-startdcd)
+  Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
                                                                           x_center_grid, y_top_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                         )
+  for i in range(no_of_particles):
+    Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])] = Jy_values_at_these_indices[i]
 
-  Jy[af.sum(Jy_x_indice[0,:]), af.sum(Jy_y_indices[0,:])] = Jy_values_at_these_indices[0,:]
+  #print('After Jy', timer.time()-startdcd)
+  #print('Before Jz', timer.time()-startdcd)
 
-  Jz_x_indice, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
+  Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
                                                                           x_center_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                         )
+  for i in range(no_of_particles):
+    Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz_values_at_these_indices[i]
 
-  Jy[af.sum(Jz_x_indice[0,:]), af.sum(Jz_y_indices[0,:])] = Jz_values_at_these_indices[0,:]
+  #print('\n\n\n DCD END TIME', timer.time()-startdcd)
 
+  af.eval(Jx, Jy, Jz)
   return Jx, Jy, Jz
