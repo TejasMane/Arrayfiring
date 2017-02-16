@@ -5,7 +5,6 @@ import params
 import arrayfire as af
 import time as timer
 
-# CHECKING GIT out
 print(af.device.device_info())
 
 start = timer.time()
