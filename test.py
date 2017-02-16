@@ -1,20 +1,20 @@
 import time
 import numpy as np
 import arrayfire as af
-#af.set_backend("cpu")
+af.device.set_device(1)
 
 # This is a benchmark test to compare numpy and arrayfire:
 
 print("The following line displays the ArrayFire build and device details:")
 af.info()
 
-
-aNumPy = np.random.rand(50, 50)
-bNumPy = np.random.rand(50, 50)
+rrr = 100
+aNumPy = np.random.rand(10000, 10000)
+bNumPy = np.random.rand(10000, 10000)
 
 np_time_start = time.time()
 
-for i in range(10):
+for i in range(rrr):
   cNumPy = aNumPy + bNumPy
 
 np_time_end     = time.time()
@@ -38,7 +38,7 @@ print("Kernel compilation complete. Compilation time = ", kernel_compilation_tim
 
 af_time_start = time.time()
 
-for i in range(1000000):
+for i in range(rrr):
   cArrayFire = aArrayFire + bArrayFire
   af.eval(cArrayFire)
  

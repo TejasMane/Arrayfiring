@@ -5,7 +5,11 @@ import params
 import arrayfire as af
 import time as timer
 
+
+print(af.device.device_info())
+
 start = timer.time()
+
 #print('Start time',start)
 """Here we shall re-assign values as set in params"""
 
@@ -219,13 +223,13 @@ if(fields_enabled == "true"):
 from fields.interpolator import zone_finder
 
 for time_index,t0 in enumerate(time):
-  zzz = input('whats up')
+  #zzz = input('whats up')
   loop_entering = timer.time()
   #print('Entering time index loop',loop_entering-start)
   
   print("Computing for Time Index = ", time_index)
-  print("Physical Time            = ", t0)
-  print() # This is to print a blank line
+  #print("Physical Time            = ", t0)
+  #print() # This is to print a blank line
   
   if(time_index == time.size-1):
     break
@@ -255,56 +259,69 @@ for time_index,t0 in enumerate(time):
   elif(fields_enabled == "true"):
 
     #from fields.current_depositor import current_b0_depositor, dcd
-    print('Before Entering Current depositer Fields',timer.time()-loop_entering)
-    coords = af.join(0, x_initial, y_initial, z_initial)
-    vels   = af.join(0, vel_x_initial, vel_y_initial, vel_z_initial)
+    #print('Before Concattinating the coordinates and velocities ',timer.time()-loop_entering)
+    #coords = af.join(0, x_initial, y_initial, z_initial)
+    #vels   = af.join(0, vel_x_initial, vel_y_initial, vel_z_initial)
+    #coords = af.to_array(np.concatenate)    
 
+    #print('After Concattinating the coordinates and velocities ',timer.time()-loop_entering)
 
-    Jx, Jy, Jz = dcd(charge, no_of_particles, coords-vels*(dt/2),\
-                     vels, x_center, y_center, current_b0_depositor, ghost_cells,\
-                     length_box_x, length_box_y, dx, dy \
-                    )
+    #print('Before Entering Current depositer Fields ',timer.time()-loop_entering)
+    Jx[:,:],Jy[:,:],Jz[:,:] = 0, 0, 0
 
-    print('After Entering Current depositer Fields',timer.time()-loop_entering)
-    #Jx,Jy,Jz = 0, 0, 0
-    print('Before updating Fields',timer.time()-loop_entering)
+    if(time_index==0):
+      Jx, Jy, Jz = dcd(      charge, no_of_particles, x_initial-vel_x_initial*(dt/2), y_initial-vel_z_initial*(dt/2), \
+                             z_initial-vel_z_initial*(dt/2), vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
+                             y_center, current_b0_depositor, ghost_cells,length_box_x, length_box_y, dx, dy \
+                      )
+    else:
 
+      Jx, Jy, Jz = dcd(      charge, no_of_particles, x_coords-vel_x*(dt/2), y_coords-vel_y*(dt/2), z_coords-vel_z*(dt/2),\
+                              vel_x, vel_y, vel_z, x_center, y_center, current_b0_depositor, ghost_cells,\
+                             length_box_x, length_box_y, dx, dy \
+                      )
+
+    #print('\n\n\n After Entering Current depositer Fields',timer.time()-loop_entering)
+
+    #print('Before updating Fields',timer.time()-loop_entering)
+    #print('Ex is ', Ex)
+    #print('Jx is ', Jx)
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
 
-    print('After updating Fields ',timer.time()-loop_entering)
+    #print('After updating Fields ',timer.time()-loop_entering)
     ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
 
     ## E at ndt and B averaged at ndt to push v at (n-0.5)dt
-    print(' Before Zone finding ',timer.time()-loop_entering)
+    #print(' Before Zone finding ',timer.time()-loop_entering)
 
     if(time_index==0):
 
-      zones_Ex, fracs_Ex = zone_finder(x_initial, y_initial, x_right, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Ey, fracs_Ey = zone_finder(x_initial, y_initial, x_center, y_top, length_box_x, length_box_y, ghost_cells)
-      zones_Ez, fracs_Ez = zone_finder(x_initial, y_initial, x_center, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Bx, fracs_Bx = zone_finder(x_initial, y_initial, x_center, y_top, length_box_x, length_box_y, ghost_cells)
-      zones_By, fracs_By = zone_finder(x_initial, y_initial, x_right, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Bz, fracs_Bz = zone_finder(x_initial, y_initial, x_right, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_Ex_x, zones_Ex_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_initial, y_initial, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Ey_x, zones_Ey_y, fracs_Ey_x, fracs_Ey_y = zone_finder(x_initial, y_initial, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_Ez_x, zones_Ez_y, fracs_Ez_x, fracs_Ez_y = zone_finder(x_initial, y_initial, x_center, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bx_x, zones_Bx_y, fracs_Bx_x, fracs_Bx_y = zone_finder(x_initial, y_initial, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_By_x, zones_By_y, fracs_By_x, fracs_By_y = zone_finder(x_initial, y_initial, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bz_x, zones_Bz_y, fracs_Bz_x, fracs_Bz_y = zone_finder(x_initial, y_initial, x_right, y_top, length_box_x, length_box_y, ghost_cells)
     else:
       #print('Input Parameters for zone finder')
       #print(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Ex, fracs_Ex = zone_finder(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Ey, fracs_Ey = zone_finder(x_coords, y_coords, x_center, y_top, length_box_x, length_box_y, ghost_cells)
-      zones_Ez, fracs_Ez = zone_finder(x_coords, y_coords, x_center, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Bx, fracs_Bx = zone_finder(x_coords, y_coords, x_center, y_top, length_box_x, length_box_y, ghost_cells)
-      zones_By, fracs_By = zone_finder(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
-      zones_Bz, fracs_Bz = zone_finder(x_coords, y_coords, x_right, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_Ex_x, zones_Ex_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Ey_x, zones_Ey_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_coords, y_coords, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_Ez_x, zones_Ez_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_coords, y_coords, x_center, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bx_x, zones_Bx_y, fracs_Bx_x, fracs_Bx_y = zone_finder(x_coords, y_coords, x_center, y_top, length_box_x, length_box_y, ghost_cells)
+      zones_By_x, zones_By_y, fracs_By_x, fracs_By_y = zone_finder(x_coords, y_coords, x_right, y_center, length_box_x, length_box_y, ghost_cells)
+      zones_Bz_x, zones_Bz_y, fracs_Bz_x, fracs_Bz_y = zone_finder(x_coords, y_coords, x_right, y_top, length_box_x, length_box_y, ghost_cells)
 
-    print(' After Zone finding ',timer.time()-loop_entering)
+    #print(' After Zone finding ',timer.time()-loop_entering)
 
-    print(' Before Interpolation  ',timer.time()-loop_entering)
+    #print(' Before Interpolation  ',timer.time()-loop_entering)
     for i in range(no_of_particles):
-      Ex_particle[i] = af.signal.approx2(Ex[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0]) + 2,  af.sum(zones_Ex[i,1]):af.sum(zones_Ex[i,1]) + 2], fracs_Ex[i,1], fracs_Ex[i,0])    
-      Ey_particle[i] = af.signal.approx2(Ey[af.sum(zones_Ey[i,0]):af.sum(zones_Ey[i,0])+2, af.sum(zones_Ey[i,1]):af.sum(zones_Ey[i,1])+2], fracs_Ey[i,1], fracs_Ey[i,0])
-      Ez_particle[i] = af.signal.approx2(Ez[af.sum(zones_Ez[i,0]):af.sum(zones_Ez[i,0])+2, af.sum(zones_Ez[i,1]):af.sum(zones_Ez[i,1])+2], fracs_Ez[i,1], fracs_Ez[i,0])
-      Bx_particle[i] = af.signal.approx2(Bx[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0])+2, af.sum(zones_Bx[i,1]):af.sum(zones_Bx[i,1])+2], fracs_Bx[i,1], fracs_Bx[i,0])
-      By_particle[i] = af.signal.approx2(By[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0])+2, af.sum(zones_By[i,1]):af.sum(zones_By[i,1])+2], fracs_By[i,1], fracs_By[i,0])
-      Bz_particle[i] = af.signal.approx2(Bz[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0])+2, af.sum(zones_Bz[i,1]):af.sum(zones_Bz[i,1])+2], fracs_Bz[i,1], fracs_Bz[i,0])
+      Ex_particle[i] = af.signal.approx2(Ex[af.sum(zones_Ex_x[i]):af.sum(zones_Ex_x[i])+2, af.sum(zones_Ex_y[i]):af.sum(zones_Ex_y[i])+2], fracs_Ex_x[i], fracs_Ex_y[i])    
+      Ey_particle[i] = af.signal.approx2(Ey[af.sum(zones_Ey_x[i]):af.sum(zones_Ey_x[i])+2, af.sum(zones_Ey_y[i]):af.sum(zones_Ey_y[i])+2], fracs_Ey_x[i], fracs_Ey_y[i])
+      Ez_particle[i] = af.signal.approx2(Ez[af.sum(zones_Ez_x[i]):af.sum(zones_Ez_x[i])+2, af.sum(zones_Ez_y[i]):af.sum(zones_Ez_y[i])+2], fracs_Ez_x[i], fracs_Ez_y[i])
+      Bx_particle[i] = af.signal.approx2(Bx[af.sum(zones_Bx_x[i]):af.sum(zones_Bx_x[i])+2, af.sum(zones_Bx_y[i]):af.sum(zones_Bx_y[i])+2], fracs_Bx_x[i], fracs_Bx_y[i])
+      By_particle[i] = af.signal.approx2(By[af.sum(zones_By_x[i]):af.sum(zones_By_x[i])+2, af.sum(zones_By_y[i]):af.sum(zones_By_y[i])+2], fracs_By_x[i], fracs_By_y[i])
+      Bz_particle[i] = af.signal.approx2(Bz[af.sum(zones_Bz_x[i]):af.sum(zones_Bz_x[i])+2, af.sum(zones_Bz_y[i]):af.sum(zones_Bz_y[i])+2], fracs_Bz_x[i], fracs_Bz_y[i])
 
     #Ex_particle_test[i] = af.signal.approx2(Ex[af.sum(zones_Ex[i,0]):af.sum(zones_Ex[i,0]) + 2,  af.sum(zones_Ex[i,1]):af.sum(zones_Ex[i,1]) + 2], fracs_Ex[i,1], fracs_Ex[i,0])
     #F = af.data.constant(0,2,2,no_of_particles)
@@ -317,14 +334,14 @@ for time_index,t0 in enumerate(time):
     #print('Field is ',F)
     ##print('Ex for loop', Ex_particle)
     #print('Ex goin in for vectorized interpolation',Ex[af.sum(zones_Ex[:,0]):af.sum(zones_Ex[:,0]) + 2,  af.sum(zones_Ex[:,1]):af.sum(zones_Ex[:,1]) + 2])
-    print(' After Interpolation  ',timer.time()-loop_entering)
-    print('Before Particle pushing',timer.time()-loop_entering)
+    #print(' After Interpolation  ',timer.time()-loop_entering)
+    #print('Before Particle pushing',timer.time()-loop_entering)
     (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial  , y_initial  , z_initial,\
                                                                      vel_x_initial, vel_y_initial, vel_z_initial    , dt, \
                                                                      Ex_particle, Ey_particle, Ez_particle,\
                                                                      Bx_particle, By_particle, Bz_particle \
                                                                     )
-    print('After Particle pushing',timer.time()-loop_entering)
+    #print('After Particle pushing',timer.time()-loop_entering)
     Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
   
   #print('Bz is ', Bz)
@@ -342,20 +359,20 @@ for time_index,t0 in enumerate(time):
   #print('After updating x = ', x_coords[0])
 
 
-  indices_right       = af.algorithm.where(x_coords>=top_boundary)
-  indices_left        = af.algorithm.where(x_coords<bottom_boundary)
+  indices_right       = af.algorithm.where(y_coords>=top_boundary)
+  indices_left        = af.algorithm.where(y_coords<bottom_boundary)
   if(indices_right.elements()>0):
-    x_coords[indices_right] = x_coords[indices_right] - length_box_x
+    y_coords[indices_right] = y_coords[indices_right] - length_box_y
   if(indices_left.elements()>0):
-    x_coords[indices_left] = x_coords[indices_left]   + length_box_x
+    y_coords[indices_left] = y_coords[indices_left]   + length_box_y
 
 
-  indices_right       = af.algorithm.where(x_coords>=front_boundary)
-  indices_left        = af.algorithm.where(x_coords<back_boundary)
+  indices_right       = af.algorithm.where(z_coords>=front_boundary)
+  indices_left        = af.algorithm.where(z_coords<back_boundary)
   if(indices_right.elements()>0):
-    x_coords[indices_right] = x_coords[indices_right] - length_box_x
+    z_coords[indices_right] = z_coords[indices_right] - length_box_z
   if(indices_left.elements()>0):
-    x_coords[indices_left] = x_coords[indices_left]   + length_box_x
+    z_coords[indices_left] = z_coords[indices_left]   + length_box_z
 
 
   #print('x position of first particle at time index = ', time_index,' is ',x_coords[0] )

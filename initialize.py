@@ -3,7 +3,7 @@ from scipy.special import erfinv
 import h5py
 import params
 import arrayfire as af
-
+af.device.set_device(1)
 """Here we shall re-assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
