@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.special import erfinv
 import h5py
 import params
 import arrayfire as af

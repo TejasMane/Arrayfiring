@@ -2,6 +2,7 @@ import numpy as np
 from scipy.special import erfinv
 import h5py
 import params
+import arrayfire as af
 
 """Here we shall re-assign values as set in params"""
 
@@ -76,4 +77,5 @@ def periodic(field, x_points, y_points, ghost_cells):
   field[y_points - 1, :] = field[ghost_cells + 1, :].copy()
   field[:, x_points - 1] = field[:, ghost_cells + 1].copy()
 
+  af.eval(field)
   return field

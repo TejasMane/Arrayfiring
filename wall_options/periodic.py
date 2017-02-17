@@ -1,7 +1,5 @@
-import numpy as np
-from scipy.special import erfinv
-import h5py
 import params
+import arrayfire as af
 
 """Here we shall re-assign values as set in params"""
 
@@ -67,32 +65,50 @@ length_box_z     = params.length_box_z
 
 # Here we complete import of all the variable from the parameters file
 
+
 def wall_x(x_coords, vel_x, vel_y, vel_z):
 
-  collided_right = np.where(x_coords > right_boundary)
-  collided_left  = np.where(x_coords < left_boundary)
+  collided_right       = af.algorithm.where(x_coords >= right_boundary)
+  collided_left        = af.algorithm.where(x_coords <  left_boundary  )
 
-  x_coords[collided_left[0]]  = x_coords[collided_left[0]]  + length_box_x 
-  x_coords[collided_right[0]] = x_coords[collided_right[0]] - length_box_x
-  
-  return(x_coords, vel_x, vel_y, vel_z)
+  if collided_right.elements() > 0:
+    x_coords[collided_right] = x_coords[collided_right] - length_box_x
+
+  if collided_left.elements() > 0:
+    x_coords[collided_left] = x_coords[collided_left]   + length_box_x
+
+  af.eval(x_coords, vel_x, vel_y, vel_z)
+
+  return x_coords, vel_x, vel_y, vel_z
+
 
 def wall_y(y_coords, vel_x, vel_y, vel_z):
 
-  collided_top = np.where(y_coords > top_boundary)
-  collided_bot = np.where(y_coords < bottom_boundary)
+  collided_top           = af.algorithm.where(y_coords >= top_boundary)
+  collided_bottom        = af.algorithm.where(y_coords < bottom_boundary)
 
-  y_coords[collided_bot[0]] = y_coords[collided_bot[0]] + length_box_y
-  y_coords[collided_top[0]] = y_coords[collided_top[0]] - length_box_y
+  if collided_top.elements()>0:
+    y_coords[collided_top] = y_coords[collided_top] - length_box_y
 
-  return(y_coords, vel_x, vel_y, vel_z)
+  if collided_bottom.elements()>0:
+    y_coords[collided_bottom] = y_coords[collided_bottom] + length_box_y
+
+  af.eval(y_coords, vel_x, vel_y, vel_z)
+
+  return y_coords, vel_x, vel_y, vel_z
+
 
 def wall_z(z_coords, vel_x, vel_y, vel_z):
 
-  collided_front = np.where(z_coords > front_boundary)
-  collided_back  = np.where(z_coords < back_boundary)
+  collided_front = af.algorithm.where(z_coords>=front_boundary)
+  collided_back  = af.algorithm.where(z_coords<back_boundary  )
 
-  z_coords[collided_back[0]]  = z_coords[collided_back[0]]  + length_box_z
-  z_coords[collided_front[0]] = z_coords[collided_front[0]] - length_box_z
-  
+  if collided_front.elements()>0:
+    z_coords[collided_front] = z_coords[collided_front] - length_box_z
+
+  if collided_back.elements()>0:
+    z_coords[collided_back] = z_coords[collided_back]   + length_box_z
+
+  af.eval(z_coords, vel_x, vel_y, vel_z)
+
   return(z_coords, vel_x, vel_y, vel_z)

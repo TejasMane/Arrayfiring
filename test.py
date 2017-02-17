@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import arrayfire as af
-af.device.set_device(1)
+#af.device.set_device(1)
 
 # This is a benchmark test to compare numpy and arrayfire:
 
@@ -9,8 +9,8 @@ print("The following line displays the ArrayFire build and device details:")
 af.info()
 
 rrr = 100
-aNumPy = np.random.rand(10000, 10000)
-bNumPy = np.random.rand(10000, 10000)
+aNumPy = np.random.rand(1000, 1000)
+bNumPy = np.random.rand(1000, 1000)
 
 np_time_start = time.time()
 

@@ -1,7 +1,6 @@
 import numpy as np
 from wall_options.EM_periodic import periodic
 import params
-from scipy import signal
 import arrayfire as af
 
 """Here we shall re-assign values as set in params"""
@@ -251,13 +250,9 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Updating the Magnetic fields   """
 
-  #Bx_local[X_index, Y_index] = Bx_local[X_index, Y_index] - (dt_by_dy * (Ez_local[X_index + 1, Y_index] - Ez_local[X_index, Y_index]))
-  
   Bx_local += -dt_by_dy*(af.signal.convolve2_separable(forward_row, identity, Ez_local))
 
   # dBx/dt = -dEz/dy
-
-  #By_local[X_index, Y_index] = By_local[X_index, Y_index] + (dt_by_dx * (Ez_local[X_index, Y_index + 1] - Ez_local[X_index, Y_index]))
 
   By_local += dt_by_dx*(af.signal.convolve2_separable(identity, forward_column, Ez_local))
 
@@ -272,10 +267,6 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Updating the Electric field using the current too """
 
-  #Ez_local[X_index, Y_index] = Ez_local[X_index, Y_index] + (  (dt_by_dx * (By_local[X_index, Y_index] - By_local[X_index, Y_index - 1]))\
-                                                             #- (dt_by_dy * (Bx_local[X_index, Y_index] - Bx_local[X_index - 1, Y_index]))\
-                                                            #) + (dt*Jz[X_index, Y_index])
-
   Ez_local +=   dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, By_local)) \
               - dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bx_local)) \
               + dt*Jz
@@ -286,7 +277,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   Ez_local = periodic(Ez_local, x_number_of_points, y_number_of_points, ghost_cells)
 
-
+  af.eval(Ez_local, Bx_local, By_local)
   return Ez_local, Bx_local, By_local
 
 
@@ -343,9 +334,6 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Updating the Magnetic field  """
 
-  #Bz_local[X_index, Y_index] = Bz_local[X_index, Y_index] - (   (dt_by_dx * (Ey_local[X_index, Y_index] - Ey_local[X_index, Y_index - 1]))- (dt_by_dy * (Ex_local[X_index, Y_index] - Ex_local[X_index - 1, Y_index]))
-                                                            #)
-
   Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Ey_local)) \
               + dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Ex_local))
 
@@ -358,17 +346,12 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
   """  Updating the Electric fields using the current too   """
 
 
-  #Ex_local[X_index, Y_index] = Ex_local[X_index, Y_index] + (dt_by_dy * (Bz_local[X_index + 1, Y_index] - Bz_local[X_index, Y_index]))+ (dt*Jx[X_index, Y_index])
-
   Ex_local += dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Bz_local)) + Jx * dt
 
   # dEx/dt = + dBz/dy
-  #print('Ey before updating', Ey_local)
+
   Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Bz_local)) + Jy * dt
-  #print('Addition term for Ey', -dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Bz_local)))
-  #print('Ey is', Ey_local)
-  
-  #zzz = input('Whats up')
+
   # dEy/dt = - dBz/dx
 
   """  Implementing periodic boundary conditions using ghost cells  """
@@ -377,6 +360,7 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   Ey_local = periodic(Ey_local, x_number_of_points, y_number_of_points, ghost_cells)
 
+  af.eval(Bz_local, Ex_local, Ey_local)
 
   return Bz_local, Ex_local, Ey_local
 
@@ -385,9 +369,14 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 def fdtd(Ex, Ey, Ez, Bx, By, Bz, c, Lx, Ly, ghost_cells, Jx, Jy, Jz):
 
   # Decoupling the fields to solve for them individually
+
   Ez_updated, Bx_updated, By_updated = mode1_fdtd(Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz)
 
   Bz_updated, Ex_updated, Ey_updated = mode2_fdtd(Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz )
+  af.eval(Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated)
 
   # combining the the results from both modes
+
+  af.eval(Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated)
+
   return Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated

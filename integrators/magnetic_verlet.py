@@ -1,6 +1,3 @@
-import numpy as np
-from scipy.special import erfinv
-import h5py
 import params
 import arrayfire as af
 
@@ -75,20 +72,15 @@ Add details here
 
 def integrator(x_coords, y_coords, z_coords, vel_x, vel_y, vel_z, dt, Ex, Ey, Ez, Bx, By, Bz):
 
+
   vel_x_minus = vel_x + (charge * Ex * dt) / (2 * mass_particle)
   vel_y_minus = vel_y + (charge * Ey * dt) / (2 * mass_particle)
   vel_z_minus = vel_z + (charge * Ez * dt) / (2 * mass_particle)
 
-  
   t_magx    = (charge * Bx * dt) / (2 * mass_particle)
   t_magy    = (charge * By * dt) / (2 * mass_particle)
   t_magz    = (charge * Bz * dt) / (2 * mass_particle)
-  
-  #print('vel_x_minus is ', vel_x_minus)
-  #print('t_magz is ', t_magz)
-  #print('vel_z_minus is ', vel_z_minus)
-  #print('t_magx is ', t_magx)
-  
+
   vminus_cross_t_x =  (vel_y_minus * t_magz) - (vel_z_minus * t_magy)
   vminus_cross_t_y = -(vel_x_minus * t_magz) + (vel_z_minus * t_magx)
   vminus_cross_t_z =  (vel_x_minus * t_magy) - (vel_y_minus * t_magx)
@@ -117,9 +109,9 @@ def integrator(x_coords, y_coords, z_coords, vel_x, vel_y, vel_z, dt, Ex, Ey, Ez
   y_coords_new = y_coords + vel_y_new * dt
   z_coords_new = z_coords + vel_z_new * dt
 
-  #af.eval(x_coords_new, y_coords_new, z_coords_new)
-  #af.eval(vel_x_new, vel_y_new, vel_z_new)
+  af.eval(x_coords_new, y_coords_new, z_coords_new)
+  af.eval(vel_x_new, vel_y_new, vel_z_new)
 
   return (x_coords_new, y_coords_new, z_coords_new,\
-          vel_x_new   , vel_y_new   , vel_z_new \
+          vel_x_new   , vel_y_new   , vel_z_new\
          )
