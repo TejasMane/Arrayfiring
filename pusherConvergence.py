@@ -2,8 +2,13 @@ import numpy as np
 import h5py
 import params
 import numpy as np
-from fields.integrators import magnetic_verlet
-#
+from integrators.magnetic_verlet import integrator
+import arrayfire as af
+from fields.fdtd import fdtd
+from scipy.integrate import odeint
+from fields.interpolator import fraction_finder
+from wall_options.periodic import wall_x, wall_y, wall_z
+
 # """Collision Options"""
 #
 # if(collision_operator == "montecarlo"):
@@ -40,16 +45,19 @@ from fields.integrators import magnetic_verlet
 
 no_of_particles = 1
 right_boundary = 1
-left_boundary = 1
+left_boundary = 0
+top_boundary = 1
+bottom_boundary = 0
 ghost_cells = 1
+speed_of_light = 1
 
 
 
 
 def error(a,b):
-  for outer_index in range(a.elements()):
-    Nx = af.sum(a[outer_index])
-    Ny = af.sum(b[outer_index])
+  for outer_index in range(len(a)):
+    Nx = (a[outer_index])
+    Ny = (b[outer_index])
 
     Lx = right_boundary - left_boundary
     Ly = top_boundary - bottom_boundary
@@ -57,6 +65,15 @@ def error(a,b):
     
     dx = Lx/Nx
     dy = Ly/Ny
+
+    final_time = 5
+    dt = np.float(dx / (2 * speed_of_light))
+    time = np.arange(0, final_time, dt)
+
+    def analytical(Y, t):
+      x, y, vx, vy = Y
+      dydt = [vx, vy, vy * np.sin(2 * np.pi * (t + dt - x)), (1 - vx) * np.sin(2 * np.pi * (t + dt - x))]
+      return dydt
 
     """ Setting the grids """
 
@@ -96,7 +113,8 @@ def error(a,b):
     # At n = 0
     y_initial = np.ones((no_of_particles), dtype = np.float)*Ly/2
     # At n = 0
-
+    z_initial = np.ones((no_of_particles), dtype = np.float)*Ly/2
+    # At n = 0
     """ Setting velocities according to maxwellian distribution """
     # At n = 0.5
     vel_x_initial = np.zeros(no_of_particles, dtype=np.float)
@@ -105,6 +123,14 @@ def error(a,b):
 
     vel_x_initial[:] = 0.2
     vel_y_initial[:] = 0.2
+
+    x_initial = af.to_array(x_initial)
+    y_initial = af.to_array(y_initial)
+    z_initial = af.to_array(z_initial)
+    vel_x_initial = af.to_array(vel_x_initial)
+    vel_y_initial = af.to_array(vel_y_initial)
+    vel_z_initial = af.to_array(vel_z_initial)
+
 
     """ Combining the initial conditions into one vector"""
 
@@ -146,8 +172,7 @@ def error(a,b):
     """ Discretizing time and making sure scaling is done right """
 
     # box_crossing_time_scale = length_of_box_x / np.max(initial_conditions_velocity_x)
-    dt = np.float(dx / (2 * speed_of_light))
-    time = np.arange(0, final_time, dt)
+
 
     # Initializing the non relevant fields:
 
@@ -156,10 +181,7 @@ def error(a,b):
 
     #Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 20
 
-    def analytical(Y,t):
-      x, y, vx, vy = Y
-      dydt = [ vx, vy, vy*np.sin(2*np.pi*(t + dt - x)), (1-vx)*np.sin(2*np.pi*(t + dt - x)) ]
-      return dydt
+
 
     position_analytical = np.zeros((len(time),2), dtype = np.float)
     velocity_analytical = np.zeros((len(time),2), dtype = np.float)
@@ -178,10 +200,6 @@ def error(a,b):
 
     old_analytical = np.zeros(6 * no_of_particles, dtype=np.float)
 
-
-    from fields.interpolator import bilinear_interpolate
-    from fields.fdtd import fdtd
-    from scipy.integrate import odeint
     """ Solver """
 
     for time_index, t0 in enumerate(time):
@@ -204,17 +222,17 @@ def error(a,b):
 
       if(time_index==0):
 
-        fracs_Ex_x, fracs_Ex_y = fraction_finder( x_initial, y_initial, x_right, y_center)
+        fracs_Ex_x, fracs_Ex_y = fraction_finder((x_initial), (y_initial), (x_right), (y_center))
 
-        fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial, y_initial, x_center, y_top)
+        fracs_Ey_x, fracs_Ey_y = fraction_finder((x_initial), (y_initial), (x_center), (y_top))
 
-        fracs_Ez_x, fracs_Ez_y = fraction_finder(x_initial, y_initial, x_center, y_center)
+        fracs_Ez_x, fracs_Ez_y = fraction_finder((x_initial), (y_initial), (x_center), (y_center))
 
-        fracs_Bx_x, fracs_Bx_y = fraction_finder(x_initial, y_initial, x_center, y_top)
+        fracs_Bx_x, fracs_Bx_y = fraction_finder((x_initial), (y_initial), (x_center), (y_top))
 
-        fracs_By_x, fracs_By_y = fraction_finder(x_initial, y_initial, x_right, y_center)
+        fracs_By_x, fracs_By_y = fraction_finder((x_initial), (y_initial), (x_right), (y_center))
 
-        fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial, y_initial, x_right, y_top)
+        fracs_Bz_x, fracs_Bz_y = fraction_finder((x_initial), (y_initial), (x_right), (y_top))
 
       else:
         fracs_Ex_x, fracs_Ex_y = fraction_finder(x_coords, y_coords, x_right, y_center)
@@ -242,7 +260,6 @@ def error(a,b):
 
       Bz_particle = af.signal.approx2(Bz, fracs_Bz_x, fracs_Bz_y)
 
-
       (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial, y_initial, z_initial,\
                                                                        vel_x_initial, vel_y_initial, vel_z_initial, dt, \
                                                                        Ex_particle, Ey_particle, Ez_particle,\
@@ -252,23 +269,25 @@ def error(a,b):
 
       if (time_index == 0):
         initial_conditions_analytical = [ \
-                                           sol[0],sol[no_of_particles + 0] , \
-                                           ((vel_x_initial[0]+sol[3*no_of_particles+0])/2), ((vel_y_initial[0]+sol[4*no_of_particles+0])/2)\
-                                        ]
+          af.sum(x_coords[0]),af.sum(y_coords[0]) , \
+                                         af.sum((vel_x_initial[0]+vel_x[0])/2),af.sum ((vel_y_initial[0]+vel_y[0])/2)\
+                                                ]
         # x,initial = x(n+1), vx_initial = avg(v(n+0.5,n+1.5)
 
         # all below from n = 1 (start is n = 0)
-
+        print('aasttarts',initial_conditions_analytical)
         initial_conditions_analytical = initial_conditions_analytical
-        position_analytical[time_index,0] = initial_conditions_analytical[0] # x
-        position_analytical[time_index,1] = initial_conditions_analytical[1] # y
-        velocity_analytical[time_index, 0] = initial_conditions_analytical[2] # vx
-        velocity_analytical[time_index, 1] = initial_conditions_analytical[3] # vy
+        # print('22222', initial_conditions_analytical)
+        position_analytical[time_index,0] = (initial_conditions_analytical[0]) # x
+        position_analytical[time_index,1] = (initial_conditions_analytical[1]) # y
+        velocity_analytical[time_index, 0] = (initial_conditions_analytical[2]) # vx
+        velocity_analytical[time_index, 1] = (initial_conditions_analytical[3]) # vy
 
       else:
         initial_conditions_analytical = old_analytical
 
-      sol_analytical = odeint(analytical,initial_conditions_analytical,t)
+      # print('Hello', initial_conditions_analytical)
+      sol_analytical = odeint(analytical, initial_conditions_analytical, t)
 
       (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
       (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
@@ -288,22 +307,22 @@ def error(a,b):
         sol_analytical[1, 1]+=Ly
 
       # saving numerical data for position from n =1 timestep
-      position_numerical[time_index, 0] = sol[0]
-      position_numerical[time_index, 1] = sol[no_of_particles+0]
+      position_numerical[time_index, 0] = af.sum(x_coords[0])
+      position_numerical[time_index, 1] = af.sum(y_coords[0])
 
       # saving numerical data for velocity from n =1 timestep
 
       if(time_index == 0) :
-        velocity_numerical[time_index, 0] = (sol[3*no_of_particles + 0] + vel_x_initial[0])/2 # n+1.5 and n+0.5
-        velocity_numerical[time_index, 1] = (sol[4*no_of_particles + 0] + vel_y_initial[0])/2
+        velocity_numerical[time_index, 0] = af.sum(vel_x[ 0] + vel_x_initial[0])/2 # n+1.5 and n+0.5
+        velocity_numerical[time_index, 1] = af.sum(vel_y[ 0] + vel_y_initial[0])/2
       else:
-        velocity_numerical[time_index, 0] = (sol[3*no_of_particles + 0] + old[3*no_of_particles + 0])/2
-        velocity_numerical[time_index, 1] = (sol[4*no_of_particles + 0] + old[4*no_of_particles + 0])/2
+        velocity_numerical[time_index, 0] = af.sum(vel_x[ 0] + vel_x_initial[ 0])/2
+        velocity_numerical[time_index, 1] = af.sum(vel_y[ 0] + vel_y_initial[ 0])/2
 
 
       Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
 
-      old = sol
+      x_initial, y_initial, z_initial, vel_x_initial, vel_y_initial, vel_z_initial = x_coords, y_coords, z_coords, vel_x, vel_y, vel_z
 
       old_analytical = sol_analytical[1, :]
       sol_analytical = sol_analytical[1, :]
