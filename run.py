@@ -195,7 +195,6 @@ if(fields_enabled == "true"):
   Ex_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
   Ey_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
 
-
   Jx = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
   Jy = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
   Jz = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
@@ -218,7 +217,7 @@ if(fields_enabled == "true"):
 
 
 # Now we shall proceed to evolve the system with time:
-from fields.interpolator import zone_finder
+from fields.interpolator import zone_finder, fraction_finder
 
 for time_index,t0 in enumerate(time):
 
@@ -258,7 +257,7 @@ for time_index,t0 in enumerate(time):
 
     #print('Before Entering Current depositer Fields ',timer.time()-loop_entering)
     Jx[:, :], Jy[:, :], Jz[:, :] = 0, 0, 0
-
+    
     if(time_index==0):
       Jx, Jy, Jz = dcd( charge, no_of_particles, x_initial-vel_x_initial*(dt/2), y_initial-vel_z_initial*(dt/2), \
                         z_initial-vel_z_initial*(dt/2), vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
@@ -283,68 +282,50 @@ for time_index,t0 in enumerate(time):
     ## E at ndt and B averaged at ndt to push v at (n-0.5)dt
     #print(' Before Zone finding ',timer.time()-loop_entering)
 
+
     if(time_index==0):
 
-      zones_Ex_x, zones_Ex_y, fracs_Ex_x, fracs_Ex_y = zone_finder( x_initial, y_initial, x_right, y_center, \
-                                                                    length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Ex_x, fracs_Ex_y = fraction_finder( x_initial, y_initial, x_right, y_center)
 
-      zones_Ey_x, zones_Ey_y, fracs_Ey_x, fracs_Ey_y = zone_finder(x_initial, y_initial, x_center, y_top,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial, y_initial, x_center, y_top)
 
-      zones_Ez_x, zones_Ez_y, fracs_Ez_x, fracs_Ez_y = zone_finder(x_initial, y_initial, x_center, y_center,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Ez_x, fracs_Ez_y = fraction_finder(x_initial, y_initial, x_center, y_center)
 
-      zones_Bx_x, zones_Bx_y, fracs_Bx_x, fracs_Bx_y = zone_finder(x_initial, y_initial, x_center, y_top,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Bx_x, fracs_Bx_y = fraction_finder(x_initial, y_initial, x_center, y_top)
 
-      zones_By_x, zones_By_y, fracs_By_x, fracs_By_y = zone_finder(x_initial, y_initial, x_right, y_center, \
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_By_x, fracs_By_y = fraction_finder(x_initial, y_initial, x_right, y_center)
 
-      zones_Bz_x, zones_Bz_y, fracs_Bz_x, fracs_Bz_y = zone_finder(x_initial, y_initial, x_right, y_top,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial, y_initial, x_right, y_top)
 
     else:
-      zones_Ex_x, zones_Ex_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_coords, y_coords, x_right, y_center,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Ex_x, fracs_Ex_y = fraction_finder(x_coords, y_coords, x_right, y_center)
 
-      zones_Ey_x, zones_Ey_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_coords, y_coords, x_center, y_top,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Ey_x, fracs_Ey_y = fraction_finder(x_coords, y_coords, x_center, y_top)
 
-      zones_Ez_x, zones_Ez_y, fracs_Ex_x, fracs_Ex_y = zone_finder(x_coords, y_coords, x_center, y_center,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Ez_x, fracs_Ez_y = fraction_finder(x_coords, y_coords, x_center, y_center)
 
-      zones_Bx_x, zones_Bx_y, fracs_Bx_x, fracs_Bx_y = zone_finder(x_coords, y_coords, x_center, y_top,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Bx_x, fracs_Bx_y = fraction_finder(x_coords, y_coords, x_center, y_top)
 
-      zones_By_x, zones_By_y, fracs_By_x, fracs_By_y = zone_finder(x_coords, y_coords, x_right, y_center,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_By_x, fracs_By_y = fraction_finder(x_coords, y_coords, x_right, y_center)
 
-      zones_Bz_x, zones_Bz_y, fracs_Bz_x, fracs_Bz_y = zone_finder(x_coords, y_coords, x_right, y_top,\
-                                                                   length_box_x, length_box_y, ghost_cells\
-                                                                  )
+      fracs_Bz_x, fracs_Bz_y = fraction_finder(x_coords, y_coords, x_right, y_top)
 
     #print(' After Zone finding ',timer.time()-loop_entering)
 
     #print(' Before Interpolation  ',timer.time()-loop_entering)
 
-    for i in range(no_of_particles):
-      Ex_particle[i] = af.signal.approx2(Ex[af.sum(zones_Ex_x[i]):af.sum(zones_Ex_x[i])+2, af.sum(zones_Ex_y[i]):af.sum(zones_Ex_y[i])+2], fracs_Ex_x[i], fracs_Ex_y[i])    
-      Ey_particle[i] = af.signal.approx2(Ey[af.sum(zones_Ey_x[i]):af.sum(zones_Ey_x[i])+2, af.sum(zones_Ey_y[i]):af.sum(zones_Ey_y[i])+2], fracs_Ey_x[i], fracs_Ey_y[i])
-      Ez_particle[i] = af.signal.approx2(Ez[af.sum(zones_Ez_x[i]):af.sum(zones_Ez_x[i])+2, af.sum(zones_Ez_y[i]):af.sum(zones_Ez_y[i])+2], fracs_Ez_x[i], fracs_Ez_y[i])
-      Bx_particle[i] = af.signal.approx2(Bx[af.sum(zones_Bx_x[i]):af.sum(zones_Bx_x[i])+2, af.sum(zones_Bx_y[i]):af.sum(zones_Bx_y[i])+2], fracs_Bx_x[i], fracs_Bx_y[i])
-      By_particle[i] = af.signal.approx2(By[af.sum(zones_By_x[i]):af.sum(zones_By_x[i])+2, af.sum(zones_By_y[i]):af.sum(zones_By_y[i])+2], fracs_By_x[i], fracs_By_y[i])
-      Bz_particle[i] = af.signal.approx2(Bz[af.sum(zones_Bz_x[i]):af.sum(zones_Bz_x[i])+2, af.sum(zones_Bz_y[i]):af.sum(zones_Bz_y[i])+2], fracs_Bz_x[i], fracs_Bz_y[i])
+
+      Ex_particle = af.signal.approx2(Ex, fracs_Ex_x, fracs_Ex_y)
+
+      Ey_particle = af.signal.approx2(Ey, fracs_Ey_x, fracs_Ey_y)
+
+      Ez_particle = af.signal.approx2(Ez, fracs_Ez_x, fracs_Ez_y)
+
+      Bx_particle = af.signal.approx2(Bx, fracs_Bx_x, fracs_Bx_y)
+
+      By_particle = af.signal.approx2(By, fracs_By_x, fracs_By_y)
+
+      Bz_particle = af.signal.approx2(Bz, fracs_Bz_x, fracs_Bz_y)
 
 
     #print(' After Interpolation  ',timer.time()-loop_entering)

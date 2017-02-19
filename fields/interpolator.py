@@ -22,6 +22,21 @@ def zone_finder(x, y, x_grid, y_grid, Lx, Ly, ghost_cells):
   return x_zone, y_zone, x_frac, y_frac
 
 
+def fraction_finder(x, y, x_grid, y_grid):
+
+  n_x = x_grid.elements()
+  n_y = y_grid.elements()
+
+  x_frac = (x - af.sum(x_grid[0])) / af.sum(x_grid[n_x - 1]- x_grid[0])
+  y_frac = (y - af.sum(y_grid[0])) / af.sum(y_grid[n_y - 1]- x_grid[0])
+
+  x_frac = x_frac * (n_x-1)
+  y_frac = y_frac * (n_y-1)
+
+  af.eval(x_frac, y_frac)
+
+  return x_frac, y_frac
+
 #print('TESTING INTERPOLATOR')
 
 #Lx = Ly =1

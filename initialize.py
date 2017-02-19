@@ -2,7 +2,6 @@ import numpy as np
 import h5py
 import params
 import arrayfire as af
-af.device.set_device(1)
 """Here we shall re-assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
@@ -117,7 +116,7 @@ if(fields_enabled == "true"):
   x_right = np.linspace(-ghost_cells*(dx/2), length_box_x + (2*ghost_cells + 1)*(dx/2), x_zones_field + 1 + 2*ghost_cells)
   y_top   = np.linspace(-ghost_cells*(dy/2), length_box_y + (2*ghost_cells + 1)*(dy/2), y_zones_field + 1 + 2*ghost_cells)
 
-  final_time = 2
+  final_time = 4
   dt         = np.float(dx / (2 * speed_of_light))
   time       = np.arange(0, final_time, dt)
 

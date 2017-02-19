@@ -170,6 +170,7 @@ def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
   af.eval(y_current_zone, x_current_zone)
   af.eval(current_by_dxdy)
 
+  
   return y_current_zone, x_current_zone, current_by_dxdy
 
 
@@ -194,22 +195,25 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
                                                                           ghost_cells, Lx, Ly\
                                                                         )
 
-  Jx_test = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-  
-  print('1',Jx_values_at_these_indices)
+  # Jx_test = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+  #
+
   for i in range(no_of_particles):
-    Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] += Jx_values_at_these_indices[i].copy()
-  print('2',Jx_values_at_these_indices)
-  Jx_test = af.flat(Jx_test)
-  #print('Before assignment', Jx_test)
-  print('Jx_y_indices are ',Jx_y_indices)
-  Jx_test[Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices] += Jx_values_at_these_indices.copy()
-  print('Just after assignment', Jx_test)
-  Jx_test = af.data.moddims(Jx_test,x_center_grid.elements(), y_center_grid.elements())
-  print('3',Jx_values_at_these_indices)
-  print('Jx test is ', Jx_test)
-  print('Jx Actual is ', Jx)
-  zzz = input('Whats up')
+    Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] = Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] +  Jx_values_at_these_indices[i]
+    
+  
+  
+  # Jx_test = af.flat(Jx_test)
+  # print('Jx_x_indices are ',Jx_x_indices)
+  # print('Jx_y_indices are ',Jx_y_indices)
+  # print('Jx_values_at_these_indices are ',Jx_values_at_these_indices)
+  # Jx_test[Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices] = Jx_test[Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices] + Jx_values_at_these_indices
+  # Jx_test[Jx_y_indices[:]*(x_center_grid.elements()) + Jx_x_indices[:]] = Jx_test[Jx_y_indices[:]*(x_center_grid.elements()) + Jx_x_indices[:]] + Jx_values_at_these_indices[:]
+  # # NOT SYNCRONIZED PROPERLY
+  # Jx_test = af.data.moddims(Jx_test,x_center_grid.elements(), y_center_grid.elements())
+  # print('Jx test is ', Jx_test)
+  # print('Jx Actual is ', Jx)
+  # zzz = input('Whats up')
 
   Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
                                                                           x_center_grid, y_top_grid,\
@@ -218,18 +222,18 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
 
 
   for i in range(no_of_particles):
-    Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])] = Jy_values_at_these_indices[i]
+    Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])] = Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])]+ Jy_values_at_these_indices[i]
 
   Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
                                                                           x_center_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                         )
   for i in range(no_of_particles):
-    Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz_values_at_these_indices[i]
+    Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
 
   af.eval(Jx, Jy, Jz)
 
   return Jx, Jy, Jz
-  
-  
+
+
 
