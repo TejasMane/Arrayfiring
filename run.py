@@ -315,17 +315,17 @@ for time_index,t0 in enumerate(time):
     #print(' Before Interpolation  ',timer.time()-loop_entering)
 
 
-      Ex_particle = af.signal.approx2(Ex, fracs_Ex_x, fracs_Ex_y)
+      Ex_particle = af.signal.approx2(Ex, fracs_Ex_y, fracs_Ex_x)
 
-      Ey_particle = af.signal.approx2(Ey, fracs_Ey_x, fracs_Ey_y)
+      Ey_particle = af.signal.approx2(Ey, fracs_Ey_y, fracs_Ey_x)
 
-      Ez_particle = af.signal.approx2(Ez, fracs_Ez_x, fracs_Ez_y)
+      Ez_particle = af.signal.approx2(Ez, fracs_Ez_y, fracs_Ez_x)
 
-      Bx_particle = af.signal.approx2(Bx, fracs_Bx_x, fracs_Bx_y)
+      Bx_particle = af.signal.approx2(Bx, fracs_Bx_y, fracs_Bx_x)
 
-      By_particle = af.signal.approx2(By, fracs_By_x, fracs_By_y)
+      By_particle = af.signal.approx2(By, fracs_By_y, fracs_By_x)
 
-      Bz_particle = af.signal.approx2(Bz, fracs_Bz_x, fracs_Bz_y)
+      Bz_particle = af.signal.approx2(Bz, fracs_Bz_y, fracs_Bz_x)
 
 
     #print(' After Interpolation  ',timer.time()-loop_entering)

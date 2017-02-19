@@ -1,6 +1,4 @@
-import numpy as np
 import h5py
-import params
 import numpy as np
 from integrators.magnetic_verlet import integrator
 import arrayfire as af
@@ -66,7 +64,7 @@ def error(a,b):
     dx = Lx/Nx
     dy = Ly/Ny
 
-    final_time = 5
+    final_time = 2
     dt = np.float(dx / (2 * speed_of_light))
     time = np.arange(0, final_time, dt)
 
@@ -248,17 +246,17 @@ def error(a,b):
         fracs_Bz_x, fracs_Bz_y = fraction_finder(x_coords, y_coords, x_right, y_top)
 
 
-      Ex_particle = af.signal.approx2(Ex, fracs_Ex_x, fracs_Ex_y)
+      Ex_particle = af.signal.approx2(Ex, fracs_Ex_y, fracs_Ex_x)
 
-      Ey_particle = af.signal.approx2(Ey, fracs_Ey_x, fracs_Ey_y)
+      Ey_particle = af.signal.approx2(Ey, fracs_Ey_y, fracs_Ey_x)
 
-      Ez_particle = af.signal.approx2(Ez, fracs_Ez_x, fracs_Ez_y)
+      Ez_particle = af.signal.approx2(Ez, fracs_Ez_y, fracs_Ez_x)
 
-      Bx_particle = af.signal.approx2(Bx, fracs_Bx_x, fracs_Bx_y)
+      Bx_particle = af.signal.approx2(Bx, fracs_Bx_y, fracs_Bx_x)
 
-      By_particle = af.signal.approx2(By, fracs_By_x, fracs_By_y)
+      By_particle = af.signal.approx2(By, fracs_By_y, fracs_By_x)
 
-      Bz_particle = af.signal.approx2(Bz, fracs_Bz_x, fracs_Bz_y)
+      Bz_particle = af.signal.approx2(Bz, fracs_Bz_y, fracs_Bz_x)
 
       (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial, y_initial, z_initial,\
                                                                        vel_x_initial, vel_y_initial, vel_z_initial, dt, \
@@ -275,7 +273,7 @@ def error(a,b):
         # x,initial = x(n+1), vx_initial = avg(v(n+0.5,n+1.5)
 
         # all below from n = 1 (start is n = 0)
-        print('aasttarts',initial_conditions_analytical)
+        # print('aasttarts',initial_conditions_analytical)
         initial_conditions_analytical = initial_conditions_analytical
         # print('22222', initial_conditions_analytical)
         position_analytical[time_index,0] = (initial_conditions_analytical[0]) # x
@@ -293,7 +291,7 @@ def error(a,b):
       (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
       (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
 
-
+      # print('vx, vy = ', vel_x, vel_y)
 
       if(sol_analytical[1, 0] > right_boundary):
         sol_analytical[1, 0]-=Lx
@@ -334,32 +332,32 @@ def error(a,b):
       velocity_analytical[time_index + 1, 0] = sol_analytical[2]
       velocity_analytical[time_index + 1, 1] = sol_analytical[3]
 
-
-    h5f = h5py.File('data_files/time/solution'+str(a)+'.h5', 'w')
-    h5f.create_dataset('data_files/time/solution_dataset'+str(a), data=time)
+    h5f = h5py.File('data_files/time/solution'+str(Nx)+'.h5', 'w')
+    h5f.create_dataset('data_files/time/solution_dataset'+str(Nx), data=time)
     h5f.close()
 
-    h5f = h5py.File('data_files/posa/solution'+str(a)+'.h5', 'w')
-    h5f.create_dataset('data_files/posa/solution_dataset'+str(a), data=position_analytical)
+    h5f = h5py.File('data_files/posa/solution'+str(Nx)+'.h5', 'w')
+    h5f.create_dataset('data_files/posa/solution_dataset'+str(Nx), data=position_analytical)
     h5f.close()
 
-    h5f = h5py.File('data_files/posn/solution'+str(a)+'.h5', 'w')
-    h5f.create_dataset('data_files/posn/solution_dataset'+str(a), data=position_numerical)
+    h5f = h5py.File('data_files/posn/solution'+str(Nx)+'.h5', 'w')
+    h5f.create_dataset('data_files/posn/solution_dataset'+str(Nx), data=position_numerical)
     h5f.close()
 
-    h5f = h5py.File('data_files/vela/solution'+str(a)+'.h5', 'w')
-    h5f.create_dataset('data_files/vela/solution_dataset'+str(a), data=velocity_analytical)
+    h5f = h5py.File('data_files/vela/solution'+str(Nx)+'.h5', 'w')
+    h5f.create_dataset('data_files/vela/solution_dataset'+str(Nx), data=velocity_analytical)
     h5f.close()
 
-    h5f = h5py.File('data_files/veln/solution'+str(a)+'.h5', 'w')
-    h5f.create_dataset('data_files/veln/solution_dataset'+str(a), data=velocity_numerical)
+    h5f = h5py.File('data_files/veln/solution'+str(Nx)+'.h5', 'w')
+    h5f.create_dataset('data_files/veln/solution_dataset'+str(Nx), data=velocity_numerical)
     h5f.close()
 
-    return 1
+  return 1
 
 
 
 N = np.array( [32, 64, 128, 256, 512 ] )
+# N = np.array([10])
 
 
 x = error(N, N)

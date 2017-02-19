@@ -1,11 +1,12 @@
-from params import *
-import h5py
 import pylab as pl
 import numpy as np
+import h5py
 
-h5f = h5py.File('data_files/time/solution'+str(32)+'.h5', 'r')
+
+h5f = h5py.File('data_files/time/solution32.h5', 'r')
 t32 = h5f['data_files/time/solution_dataset'+str(32)][:]
 h5f.close()
+
 h5f = h5py.File('data_files/posa/solution'+str(32)+'.h5', 'r')
 pos_ana32 = h5f['data_files/posa/solution_dataset'+str(32)][:]
 h5f.close()
