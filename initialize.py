@@ -116,7 +116,7 @@ if(fields_enabled == "true"):
   x_right = np.linspace(-ghost_cells*(dx/2), length_box_x + (2*ghost_cells + 1)*(dx/2), x_zones_field + 1 + 2*ghost_cells)
   y_top   = np.linspace(-ghost_cells*(dy/2), length_box_y + (2*ghost_cells + 1)*(dy/2), y_zones_field + 1 + 2*ghost_cells)
 
-  final_time = 4
+  final_time = 2
   dt         = np.float(dx / (2 * speed_of_light))
   time       = np.arange(0, final_time, dt)
 

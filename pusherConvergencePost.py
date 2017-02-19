@@ -234,7 +234,7 @@ errorx[4] = (abs(pos_ana512[-10,0]-pos_num512[-10,0]))/len(t512)
 # errorx[5] = (abs(pos_ana1024[-10,0]-pos_num1024[-10,0]))/len(t1024)
 
 
-pl.loglog(N,errorx,'-o',label='$\mathrm{Numerical}$')
+pl.loglog(N,errorx,'-o',label='$\mathrm{Error}$')
 pl.loglog(N,1.5*(N**-1.999),'--',color = 'black',lw = 2,label = ' $O(N^{-2})$ ')
 pl.legend().draggable()
 pl.xlabel('$\mathrm{N}$')
@@ -255,7 +255,7 @@ errory[4] = (abs(pos_ana512[-10,1]-pos_num512[-10,1]))/len(t512)
 # errory[5] = (abs(pos_ana1024[-10,1]-pos_num1024[-10,1]))/len(t1024)
 
 
-pl.loglog(N,errory,'-o',label='$\mathrm{Numerical}$')
+pl.loglog(N,errory,'-o',label='$\mathrm{Error}$')
 pl.loglog(N,1.5*(N**-1.999),'--',color = 'black',lw = 2,label = ' $O(N^{-2})$ ')
 pl.legend().draggable()
 pl.xlabel('$\mathrm{N}$')
@@ -275,7 +275,7 @@ errorvx[4] = (abs(vel_ana512[-10,0]-vel_num512[-10,0]))/len(t512)
 
 
 
-pl.loglog(N,errorvx,'-o',label='$\mathrm{Numerical}$')
+pl.loglog(N,errorvx,'-o',label='$\mathrm{Error}$')
 pl.loglog(N,1.5*(N**-1.999),'--',color = 'black',lw = 2,label = ' $O(N^{-2})$ ')
 pl.legend().draggable()
 pl.xlabel('$\mathrm{N}$')
@@ -296,7 +296,7 @@ errorvy[4] = (abs(vel_ana512[-10,1]-vel_num512[-10,1]))/len(t512)
 
 
 
-pl.loglog(N,errorvy,'-o',label='$\mathrm{Numerical}$')
+pl.loglog(N,errorvy,'-o',label='$\mathrm{Error}$')
 pl.loglog(N,1.5*(N**-1.999),'--',color = 'black',lw = 2,label = ' $O(N^{-2})$ ')
 pl.legend().draggable()
 pl.xlabel('$\mathrm{N}$')
