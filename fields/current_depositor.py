@@ -205,7 +205,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
 
   input_indices = (Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices)
   Jx, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jx_values_at_these_indices)
-  Jx = af.data.moddims(af.to_array(Jx), x_center_grid.elements(), y_center_grid.elements())
+  Jx = af.data.moddims(af.to_array(Jx), y_center_grid.elements(), x_center_grid.elements())
 
 
   Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
@@ -216,7 +216,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
 
   input_indices = (Jy_y_indices*(x_center_grid.elements()) + Jy_x_indices)
   Jy, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jy_values_at_these_indices)
-  Jy = af.data.moddims(af.to_array(Jy), x_center_grid.elements(), y_center_grid.elements())
+  Jy = af.data.moddims(af.to_array(Jy), y_center_grid.elements(), x_center_grid.elements())
 
 
   # for i in range(no_of_particles):
@@ -231,7 +231,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
 
   input_indices = (Jz_y_indices*(x_center_grid.elements()) + Jz_x_indices)
   Jz, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jz_values_at_these_indices)
-  Jz = af.data.moddims(af.to_array(Jz), x_center_grid.elements(), y_center_grid.elements())
+  Jz = af.data.moddims(af.to_array(Jz),  y_center_grid.elements(), x_center_grid.elements())
 
   af.eval(Jx, Jy, Jz)
 

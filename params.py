@@ -1,4 +1,4 @@
-no_of_particles      = 10
+no_of_particles      = 50000
 mass_particle        = 1.0
 boltzmann_constant   = 1.0
 
@@ -48,9 +48,9 @@ if(fields_enabled == "true"):
   spread          = 0.1     # Shall be used to assign Gaussian
   ghost_cells     = 1       # Refers to the number of cells beyond the physical domain(usually set to 1)
   speed_of_light  = 1
-  charge          = 1   # Charge of each individual particle in the simulation
-  x_zones_field   = 3     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
-  y_zones_field   = 3     # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
+  charge          = 1e-6   # Charge of each individual particle in the simulation
+  x_zones_field   = 200     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
+  y_zones_field   = 1     # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
   forward_row     = af.Array([1, -1, 0])
   forward_column  = af.Array([1, -1, 0])
   backward_row    = af.Array([0, 1, -1])
@@ -77,7 +77,7 @@ if(fields_enabled == "true"):
 # Option "hardwall" - Hardwall B.C's at the walls
 # Option "thermal"  - Thermal B.C's at the walls
 
-T_initial        = 1.5
+T_initial        = 1.0
 
 wall_condition_x = "periodic"
 wall_condition_y = "periodic"
@@ -109,3 +109,7 @@ length_box_y     = top_boundary   - bottom_boundary
 back_boundary    = 0.
 front_boundary   = 1.
 length_box_z     = front_boundary - back_boundary
+
+""" Linear Theory terms"""
+k_fourier = 1
+Amplitude_perturbed = 0.5

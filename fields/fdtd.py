@@ -224,11 +224,11 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """Enforcing BC's"""
 
-  Ez_local = periodic(Ez_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Ez_local = periodic(Ez_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  Bx_local = periodic(Bx_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Bx_local = periodic(Bx_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  By_local = periodic(By_local, x_number_of_points, y_number_of_points, ghost_cells)
+  By_local = periodic(By_local, y_number_of_points, x_number_of_points, ghost_cells)
 
   """ Setting division size and time steps"""
 
@@ -260,9 +260,9 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Implementing periodic boundary conditions using ghost cells  """
 
-  Bx_local = periodic(Bx_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Bx_local = periodic(Bx_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  By_local = periodic(By_local, x_number_of_points, y_number_of_points, ghost_cells)
+  By_local = periodic(By_local, y_number_of_points, x_number_of_points, ghost_cells)
 
 
   """  Updating the Electric field using the current too """
@@ -275,7 +275,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Implementing periodic boundary conditions using ghost cells  """
 
-  Ez_local = periodic(Ez_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Ez_local = periodic(Ez_local, y_number_of_points, x_number_of_points, ghost_cells)
 
   af.eval(Ez_local, Bx_local, By_local)
   return Ez_local, Bx_local, By_local
@@ -314,11 +314,11 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """Enforcing periodic BC's"""
 
-  Bz_local = periodic(Bz_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Bz_local = periodic(Bz_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  Ex_local = periodic(Ex_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Ex_local = periodic(Ex_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  Ey_local = periodic(Ey_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Ey_local = periodic(Ey_local, y_number_of_points, x_number_of_points, ghost_cells)
 
 
   """ Setting division size and time steps"""
@@ -341,7 +341,7 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   #Implementing periodic boundary conditions using ghost cells
 
-  Bz_local = periodic(Bz_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Bz_local = periodic(Bz_local, y_number_of_points, x_number_of_points, ghost_cells)
 
   """  Updating the Electric fields using the current too   """
 
@@ -356,9 +356,9 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   """  Implementing periodic boundary conditions using ghost cells  """
 
-  Ex_local = periodic(Ex_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Ex_local = periodic(Ex_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  Ey_local = periodic(Ey_local, x_number_of_points, y_number_of_points, ghost_cells)
+  Ey_local = periodic(Ey_local, y_number_of_points, x_number_of_points, ghost_cells)
 
   af.eval(Bz_local, Ex_local, Ey_local)
 

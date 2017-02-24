@@ -52,12 +52,14 @@ if(wall_condition_z == "thermal"):
 fields_enabled   = params.fields_enabled
 
 if(fields_enabled == "true"):
-  spread            = params.spread
-  ghost_cells       = params.ghost_cells
-  speed_of_light    = params.speed_of_light
-  charge            = params.charge
-  x_zones_field     = params.x_zones_field
-  y_zones_field     = params.y_zones_field
+  spread              = params.spread
+  ghost_cells         = params.ghost_cells
+  speed_of_light      = params.speed_of_light
+  charge              = params.charge
+  x_zones_field       = params.x_zones_field
+  y_zones_field       = params.y_zones_field
+  k_fourier           = params.k_fourier
+  Amplitude_perturbed = params.Amplitude_perturbed
 
 left_boundary    = params.left_boundary
 right_boundary   = params.right_boundary
@@ -82,7 +84,7 @@ x_initial     = h5f['x_coords'][:]
 x_initial     = af.to_array(x_initial)
 
 y_initial     = h5f['y_coords'][:]
-y_initial     = af.to_array(y_initial)
+y_initial     = (af.to_array(y_initial)).as_type(af.Dtype.f64)
 
 vel_x_initial = h5f['vel_x'][:]
 vel_x_initial = af.to_array(0.2*vel_x_initial)
@@ -91,7 +93,7 @@ vel_y_initial = h5f['vel_y'][:]
 vel_y_initial = af.to_array(0.2*vel_y_initial)
 
 time          = h5f['time'][:]
-
+print('time length', time.size)
 x_center      = h5f['x_center'][:]
 x_center      = af.to_array(x_center)
 
@@ -179,13 +181,13 @@ if(fields_enabled == "true"):
   from fields.fdtd import fdtd
   from integrators.magnetic_verlet import integrator
   from fields.current_depositor import dcd, current_b0_depositor, charge_b0_depositor
-  Ez = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
-  Bx = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
-  By = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Ez = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Bx = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  By = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
 
-  Bz = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
-  Ex = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
-  Ey = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Bz = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Ex = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Ey = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
   
   Ez_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
   Bx_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
@@ -195,9 +197,9 @@ if(fields_enabled == "true"):
   Ex_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
   Ey_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
 
-  Jx = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
-  Jy = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
-  Jz = af.data.constant(0,x_center.elements(),y_center.elements(), dtype=af.Dtype.f64)
+  Jx = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Jy = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Jz = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
 
   X_center_physical = af.tile(af.reorder(x_center[ghost_cells:-ghost_cells],1),y_center[ghost_cells:-ghost_cells].elements(),1)
 
@@ -212,9 +214,10 @@ if(fields_enabled == "true"):
   dx = length_box_x/x_zones_field
   dy = length_box_y/y_zones_field
 
-  Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
-  Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
-
+  # Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
+  # Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
+  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = Amplitude_perturbed * no_of_particles * \
+                                                            af.arith.cos(k_fourier*(-X_right_physical))
 
 # Now we shall proceed to evolve the system with time:
 from fields.interpolator import zone_finder, fraction_finder
@@ -223,8 +226,8 @@ for time_index,t0 in enumerate(time):
 
   loop_entering = timer.time()
   #print('Entering time index loop',loop_entering-start)
-  
-  print("Computing for Time Index = ", time_index)
+  if(time_index%100==0):
+    print("Computing for Time Index = ", time_index)
   #print("Physical Time            = ", t0)
   #print() # This is to print a blank line
   
@@ -284,8 +287,8 @@ for time_index,t0 in enumerate(time):
 
 
     if(time_index==0):
-
-      fracs_Ex_x, fracs_Ex_y = fraction_finder( x_initial, y_initial, x_right, y_center)
+      # print('yolo',x_initial,'yyyyyyyyy', y_initial)
+      fracs_Ex_x, fracs_Ex_y = fraction_finder(x_initial, y_initial, x_right, y_center)
 
       fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial, y_initial, x_center, y_top)
 
@@ -400,7 +403,7 @@ for time_index,t0 in enumerate(time):
   ## Make changes to this write frequency if necessary
   ## This data will then be post-processed to generate results
   
-  ##if((time_index%100)==0):
+  ##if((time_index%10)==0):
     ##h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
     ##h5f.create_dataset('x_coords',   data = x_coords)
     ##h5f.create_dataset('y_coords',   data = y_coords)
@@ -418,7 +421,7 @@ for time_index,t0 in enumerate(time):
     ##h5f.create_dataset('kinetic_energy', data = kinetic_energy)
     ##h5f.create_dataset('pressure',       data = pressure)
     ##h5f.create_dataset('time',           data = time)
-    
+
     ##if(collision_operator == "potential-based"):
       ##h5f.create_dataset('potential_energy',    data = potential_energy)
     
@@ -426,3 +429,8 @@ for time_index,t0 in enumerate(time):
       ##h5f.create_dataset('temperature_spatial', data = temperature_spatial)
 
     ##h5f.close()
+
+
+  h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
+  h5f.create_dataset('x_coords',   data = x_coords)
+  h5f.close()
