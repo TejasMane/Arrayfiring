@@ -73,6 +73,9 @@ change may also be made at params.py
 
 """ Initializing the positions for the particles """
 
+# initial_position_x = left_boundary   + length_box_x * af.randu(no_of_particles)
+# initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
+# initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
 initial_position_x = left_boundary   + length_box_x * af.randu(no_of_particles)
 initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
 initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
@@ -87,10 +90,16 @@ R4 = af.randu(no_of_particles)
 
 # Sampling velocities corresponding to Maxwell-Boltzmann distribution at T_initial
 # For this we shall be using the Box-Muller transformation
-constant_multiply  = np.sqrt(2*boltzmann_constant*T_initial/mass_particle)
+# constant_multiply  = np.sqrt(2 * boltzmann_constant*T_initial/mass_particle)
+# initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
+# initial_velocity_y = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R1)
+# initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
+constant_multiply  = np.sqrt(boltzmann_constant*T_initial/mass_particle)
 initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
-initial_velocity_y = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R1)
-initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
+# initial_velocity_y = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R1)
+# initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
+initial_velocity_y = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
+initial_velocity_z = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
 
 """ Time parameters for the simulation """
 
