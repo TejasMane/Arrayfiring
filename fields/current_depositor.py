@@ -1,6 +1,7 @@
 import params
 import arrayfire as af
 import time as timer
+import numpy as np
 
 """Here we shall re-assign values as set in params"""
 
@@ -184,52 +185,53 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   x_right_grid = x_center_grid + dx/2
   y_top_grid = y_center_grid + dy/2
 
-  startdcd = timer.time()
-
-  Jx = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-  Jy = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-  Jz = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+  elements = x_center_grid.elements()*y_center_grid.elements()
+  # Jx = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+  # Jy = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+  # Jz = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
 
   Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
                                                                           x_right_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
-                                                                        )
+                                                                         )
 
   # Jx_test = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-  #
 
-  for i in range(no_of_particles):
-    Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] = Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] +  Jx_values_at_these_indices[i]
-    
-  
-  
-  # Jx_test = af.flat(Jx_test)
-  # print('Jx_x_indices are ',Jx_x_indices)
-  # print('Jx_y_indices are ',Jx_y_indices)
-  # print('Jx_values_at_these_indices are ',Jx_values_at_these_indices)
-  # Jx_test[Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices] = Jx_test[Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices] + Jx_values_at_these_indices
-  # Jx_test[Jx_y_indices[:]*(x_center_grid.elements()) + Jx_x_indices[:]] = Jx_test[Jx_y_indices[:]*(x_center_grid.elements()) + Jx_x_indices[:]] + Jx_values_at_these_indices[:]
-  # # NOT SYNCRONIZED PROPERLY
-  # Jx_test = af.data.moddims(Jx_test,x_center_grid.elements(), y_center_grid.elements())
-  # print('Jx test is ', Jx_test)
-  # print('Jx Actual is ', Jx)
-  # zzz = input('Whats up')
+
+  # for i in range(no_of_particles):
+  #   Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] = Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] +  Jx_values_at_these_indices[i]
+
+
+
+  input_indices = (Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices)
+  Jx, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jx_values_at_these_indices)
+  Jx = af.data.moddims(af.to_array(Jx), x_center_grid.elements(), y_center_grid.elements())
+
 
   Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
                                                                           x_center_grid, y_top_grid,\
                                                                           ghost_cells, Lx, Ly\
-                                                                        )
+                                                                         )
 
 
-  for i in range(no_of_particles):
-    Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])] = Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])]+ Jy_values_at_these_indices[i]
+  input_indices = (Jy_y_indices*(x_center_grid.elements()) + Jy_x_indices)
+  Jy, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jy_values_at_these_indices)
+  Jy = af.data.moddims(af.to_array(Jy), x_center_grid.elements(), y_center_grid.elements())
+
+
+  # for i in range(no_of_particles):
+  #   Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])] = Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])]+ Jy_values_at_these_indices[i]
 
   Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
                                                                           x_center_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
-                                                                        )
-  for i in range(no_of_particles):
-    Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
+                                                                         )
+  # for i in range(no_of_particles):
+  #   Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
+
+  input_indices = (Jz_y_indices*(x_center_grid.elements()) + Jz_x_indices)
+  Jz, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jz_values_at_these_indices)
+  Jz = af.data.moddims(af.to_array(Jz), x_center_grid.elements(), y_center_grid.elements())
 
   af.eval(Jx, Jy, Jz)
 
