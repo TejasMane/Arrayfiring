@@ -217,7 +217,7 @@ if(fields_enabled == "true"):
   # Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
   # Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
   Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = Amplitude_perturbed * (1/k_fourier) * \
-                                                           af.arith.sin(k_fourier*(-X_right_physical))
+                                                           af.arith.cos(k_fourier*(-X_right_physical))
 
 # Now we shall proceed to evolve the system with time:
 from fields.interpolator import zone_finder, fraction_finder

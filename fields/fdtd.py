@@ -23,7 +23,7 @@ elif(collision_operator == "potential-based"):
 elif(collision_operator == "montecarlo"):
   x_zones_montecarlo = params.x_zones_montecarlo
   y_zones_montecarlo = params.y_zones_montecarlo
-  
+
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
 T_initial          = params.T_initial
@@ -97,7 +97,7 @@ physical point
 """
 
 
-""" Alignment of the spatial grids for the fields(Convention chosen) 
+""" Alignment of the spatial grids for the fields(Convention chosen)
 
 # This is the convention which will be used in the matrix representation
 

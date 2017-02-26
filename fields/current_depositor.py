@@ -23,7 +23,7 @@ elif(collision_operator == "potential-based"):
 elif(collision_operator == "montecarlo"):
   x_zones_montecarlo = params.x_zones_montecarlo
   y_zones_montecarlo = params.y_zones_montecarlo
-  
+
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
 T_initial          = params.T_initial
@@ -125,14 +125,14 @@ def charge_b0_depositor(x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   return y_charge_zone, x_charge_zone, charge_by_dxdy
 
-  return y_charge_zone, x_charge_zone, charge_by_dxdy
+  return x_charge_zone, y_charge_zone, charge_by_dxdy
 
 
 """Current Deposition for B0 splines (Vectorized)"""
 
 
 def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
-  
+
   x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
   y_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
 
@@ -165,14 +165,14 @@ def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
   if(indices.elements()>0):
     y_current_zone[indices] = (y_zone[indices] +1).as_type(af.Dtype.u32)
 
-    
+
   current_by_dxdy = ((charge/(dx*dy))*velocity_required).as_type(af.Dtype.f64)
 
   af.eval(y_current_zone, x_current_zone)
   af.eval(current_by_dxdy)
 
-  
-  return y_current_zone, x_current_zone, current_by_dxdy
+
+  return x_current_zone, y_current_zone, current_by_dxdy
 
 
 
@@ -189,23 +189,27 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   # Jx = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
   # Jy = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
   # Jz = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-
   Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
                                                                           x_right_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )
 
-  # Jx_test = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-
-
+  # print('Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices are ', Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices )
+  # print('Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices are ', Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices)
+  # Jx_test = af.data.constant(0, y_center_grid.elements(), x_center_grid.elements(), dtype=af.Dtype.f64)
+  #
+  #
   # for i in range(no_of_particles):
-  #   Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] = Jx[af.sum(Jx_x_indices[i]), af.sum(Jx_y_indices[i])] +  Jx_values_at_these_indices[i]
+  #   Jx_test[af.sum(Jx_y_indices[i]), af.sum(Jx_x_indices[i])]  = Jx_test[af.sum(Jx_y_indices[i]), af.sum(Jx_x_indices[i])] +  Jx_values_at_these_indices[i]
 
 
 
-  input_indices = (Jx_y_indices*(x_center_grid.elements()) + Jx_x_indices)
+  input_indices = (Jx_x_indices*(y_center_grid.elements()) + Jx_y_indices)
+
   Jx, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jx_values_at_these_indices)
   Jx = af.data.moddims(af.to_array(Jx), y_center_grid.elements(), x_center_grid.elements())
+
+
 
 
   Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
@@ -214,7 +218,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
                                                                          )
 
 
-  input_indices = (Jy_y_indices*(x_center_grid.elements()) + Jy_x_indices)
+  input_indices = (Jy_x_indices*(y_center_grid.elements()) + Jy_y_indices)
   Jy, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jy_values_at_these_indices)
   Jy = af.data.moddims(af.to_array(Jy), y_center_grid.elements(), x_center_grid.elements())
 
@@ -229,13 +233,10 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   # for i in range(no_of_particles):
   #   Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
 
-  input_indices = (Jz_y_indices*(x_center_grid.elements()) + Jz_x_indices)
+  input_indices = (Jz_x_indices*(y_center_grid.elements()) + Jz_y_indices)
   Jz, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jz_values_at_these_indices)
   Jz = af.data.moddims(af.to_array(Jz),  y_center_grid.elements(), x_center_grid.elements())
 
   af.eval(Jx, Jy, Jz)
 
   return Jx, Jy, Jz
-
-
-

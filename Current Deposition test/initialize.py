@@ -83,19 +83,22 @@ change may also be made at params.py
 # Might not initialize correctly for some divisions
 
 
-x_divisions_perturbed = 100
-length_of_box_x         = right_boundary - left_boundary
-initial_position_x=np.zeros(no_of_particles)
-last=0
-next=0
-for i in range(x_divisions_perturbed):
-   next=last+(no_of_particles*Amplitude_perturbed*np.sin(2*i*np.pi/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
-   initial_position_x[int(round(last)):(int(round(next))-1)] = length_of_box_x*(i+1)/(x_divisions_perturbed+1)
-   last=next
+# x_divisions_perturbed = 100
+# length_of_box_x         = right_boundary - left_boundary
+# initial_position_x=np.zeros(no_of_particles)
+# last=0
+# next=0
+# for i in range(x_divisions_perturbed):
+#    next=last+(no_of_particles*Amplitude_perturbed*np.sin(2*i*np.pi/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
+#    initial_position_x[int(round(last)):(int(round(next))-1)] = length_of_box_x*(i+1)/(x_divisions_perturbed+1)
+#    last=next
 
-initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
-initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
+# initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
+# initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
 
+initial_position_x = (af.Array([0.3, 0.1, 0.7, 0.5, 0.7, 0.8])).as_type(af.Dtype.f64)
+initial_position_y = (af.Array([0.1, 0.3, 0.2, 0.7, 0.5, 0.9])).as_type(af.Dtype.f64)
+initial_position_z = (af.Array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5])).as_type(af.Dtype.f64)
 
 """ Initializing velocities to the particles """
 
@@ -126,23 +129,23 @@ R2 = af.to_array(R2)
 
 constant_multiply  = np.sqrt(2*boltzmann_constant * T_initial/mass_particle)
 
-initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
+# initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
 
 
-# initial_velocity_x = (af.Array([0.1, 0.3, 0.4, 0.6, 0.95, 0.82])).as_type(af.Dtype.f64)
+initial_velocity_x = (af.Array([0.1, 0.3, 0.4, 0.6, 0.95, 0.82])).as_type(af.Dtype.f64)
 #constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
 
 
-# initial_velocity_y = 0 * R1
-# initial_velocity_z = 0 * R1
+initial_velocity_y = 0 * R1
+initial_velocity_z = 0 * R1
 
 # initial_velocity_x = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.cos(2*np.pi*R1)
 # initial_velocity_y = constant_multiply*af.arith.sqrt(-af.arith.log(R2))*af.arith.sin(2*np.pi*R1)
 # initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
 
 
-initial_velocity_y = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
-initial_velocity_z = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
+# initial_velocity_y = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
+# initial_velocity_z = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
 
 """ Time parameters for the simulation """
 

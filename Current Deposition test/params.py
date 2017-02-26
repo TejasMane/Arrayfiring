@@ -1,4 +1,4 @@
-no_of_particles      = 20000
+no_of_particles      = 6
 mass_particle        = 1.0
 boltzmann_constant   = 1.0
 
