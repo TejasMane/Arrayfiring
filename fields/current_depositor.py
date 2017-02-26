@@ -86,44 +86,43 @@ length_box_z     = params.length_box_z
 
 def charge_b0_depositor(x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
-  x_charge_zone = af.data.constant(0, x.elements(), dtype=af.Dtype.u32)
-  y_charge_zone = af.data.constant(0, x.elements(), dtype=af.Dtype.u32)
+  x_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
+  y_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
 
-  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells)  # number of zones
-  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells)  # number of zones
+  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
 
-  dx = Lx / nx
-  dy = Ly / ny
+  dx = Lx/nx
+  dy = Ly/ny
 
-  x_zone = (((af.abs(x - af.sum(x_grid[0]))) / dx).as_type(af.Dtype.u32))
-  y_zone = (((af.abs(y - af.sum(y_grid[0]))) / dy).as_type(af.Dtype.u32))
+  x_zone = (((af.abs(x - af.sum(x_grid[0])))/dx).as_type(af.Dtype.u32))
+  y_zone = (((af.abs(y - af.sum(y_grid[0])))/dy).as_type(af.Dtype.u32))
 
-  indices = af.where(af.abs(x - x_grid[x_zone]) < af.abs(x - x_grid[x_zone + 1]))
+  indices = af.where(af.abs(x-x_grid[x_zone])<af.abs(x-x_grid[x_zone + 1]))
 
-  if (indices.elements() > 0):
+  if(indices.elements()>0):
     x_charge_zone[indices] = x_zone[indices]
 
-  indices = af.where(af.abs(x - x_grid[x_zone]) >= af.abs(x - x_grid[x_zone + 1]))
+  indices = af.where(af.abs(x-x_grid[x_zone])>=af.abs(x-x_grid[x_zone + 1]))
 
-  if (indices.elements() > 0):
+  if(indices.elements()>0):
     x_charge_zone[indices] = (x_zone[indices] + 1).as_type(af.Dtype.u32)
 
-  indices = af.where(af.abs(y - y_grid[y_zone]) < af.abs(y - y_grid[y_zone + 1]))
+  indices = af.where(af.abs(y - y_grid[y_zone])<af.abs(y - y_grid[y_zone + 1]))
 
-  if (indices.elements() > 0):
+  if(indices.elements()>0):
     y_charge_zone[indices] = y_zone[indices]
 
-  indices = af.where(af.abs(y - y_grid[y_zone]) >= af.abs(y - y_grid[y_zone + 1]))
+  indices = af.where(af.abs(y - y_grid[y_zone])>=af.abs(y - y_grid[y_zone + 1]))
 
-  if (indices.elements() > 0):
-    y_charge_zone[indices] = (y_zone[indices] + 1).as_type(af.Dtype.u32)
+  if(indices.elements()>0):
+    y_charge_zone[indices] = (y_zone[indices] +1).as_type(af.Dtype.u32)
 
-  charge_by_dxdy = ((charge / (dx * dy))).as_type(af.Dtype.f64)
 
-  af.eval(y_charge_zone, x_charge_zone)
-  af.eval(charge_by_dxdy)
+  charge_by_dxdy = (charge/(dx*dy)).as_type(af.Dtype.f64)
 
-  return y_charge_zone, x_charge_zone, charge_by_dxdy
+  af.eval(y_current_zone, x_current_zone)
+  af.eval(current_by_dxdy)
 
   return x_charge_zone, y_charge_zone, charge_by_dxdy
 

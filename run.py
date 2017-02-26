@@ -216,8 +216,8 @@ if(fields_enabled == "true"):
 
   # Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
   # Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
-  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = Amplitude_perturbed * (1/k_fourier) * \
-                                                           af.arith.sin(k_fourier*(-X_right_physical))
+  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * Amplitude_perturbed * (1/k_fourier) * \
+                                                           af.arith.sin(k_fourier*(X_right_physical))
 
 # Now we shall proceed to evolve the system with time:
 from fields.interpolator import zone_finder, fraction_finder
@@ -274,7 +274,7 @@ for time_index,t0 in enumerate(time):
                       )
 
     # print('After current deposition, Jx = ', Jx)
-
+    # print(' Ex is ',((Ex)))
     # input('Whats up')
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
 
@@ -325,6 +325,9 @@ for time_index,t0 in enumerate(time):
     Bz_particle = af.signal.approx2(Bz, fracs_Bz_y, fracs_Bz_x)
 
 
+
+
+
     # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
 
     (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial, y_initial, z_initial,\
@@ -336,16 +339,24 @@ for time_index,t0 in enumerate(time):
     # SAVING THE FIELDS FOR NEXT TIME STEP
 
     Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
+    print('time is ',time_index)
+    print('dt is ', dt)
+    print('Ex max is ',af.max(Ex))
+    print('Ex min is ',af.min(Ex))
+    print('Jx max is ',af.max(Jx))
+    print('Jx min is ',af.min(Jx))
+    print('Jx is ', Jx)
+    print('x min is', af.min(x_coords))
+    print('x max is ', af.max(x_coords))
+    input('check')
 
+    #
+    # if(time_index == 10):
+    #     diff_Ex =
 
-  print('Max Jx is ',af.max(af.abs(Jx)))
-  print('Max Ex is ',af.max(af.abs(Ex)))
-  print('Max vx is ',af.max(af.abs(vel_x)))
-  input('check')
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
   (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
-
 
 
   # (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \

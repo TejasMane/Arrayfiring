@@ -147,10 +147,10 @@ initial_velocity_z = af.data.constant(0, no_of_particles, dtype = af.Dtype.f64)
 """ Time parameters for the simulation """
 
 # Any time parameter changes that need to be made for the simulation should be edited here:
-box_crossing_time_scale = (length_box_x/np.max(initial_velocity_x))
-final_time              = 3 #5 * box_crossing_time_scale
-dt                      = 0.001#0.1 * box_crossing_time_scale
-time                    = np.arange(0, final_time, dt)
+# box_crossing_time_scale = (length_box_x/np.max(initial_velocity_x))
+# final_time              = 3 #5 * box_crossing_time_scale
+# dt                      = 0.001#0.1 * box_crossing_time_scale
+# time                    = np.arange(0, final_time, dt)
 
 """ Parameters for fields """
 
@@ -168,9 +168,9 @@ if(fields_enabled == "true"):
   x_right = np.linspace(-ghost_cells*(dx/2), length_box_x + (2*ghost_cells + 1)*(dx/2), x_zones_field + 1 + 2*ghost_cells)
   y_top   = np.linspace(-ghost_cells*(dy/2), length_box_y + (2*ghost_cells + 1)*(dy/2), y_zones_field + 1 + 2*ghost_cells)
 
-  # final_time = 2
-  # dt         = np.float(dx / (2* 10 * speed_of_light))
-  # time       = np.arange(0, final_time, dt)
+  final_time = 3
+  dt         = np.float(dx / (2* 1000 * speed_of_light))
+  time       = np.arange(0, final_time, dt)
 
 """ Writing the data to a file which can be accessed by a solver"""
 
