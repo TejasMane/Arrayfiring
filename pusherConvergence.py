@@ -48,7 +48,8 @@ top_boundary = 1
 bottom_boundary = 0
 ghost_cells = 1
 speed_of_light = 1
-
+mass_particle = 1
+charge = 1
 
 
 
@@ -175,7 +176,7 @@ def error(a,b):
     # Initializing the non relevant fields:
 
     Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = af.arith.sin(2*np.pi*(-X_right_physical))
-    Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = af.arith.sin(2*np.pi*((dt/2)-X_right_physical))
+    Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = af.arith.sin(2*np.pi*(-(dt/2)-X_right_physical))
 
     #Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 20
 
@@ -258,7 +259,7 @@ def error(a,b):
 
       Bz_particle = af.signal.approx2(Bz, fracs_Bz_y, fracs_Bz_x)
 
-      (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial, y_initial, z_initial,\
+      (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(mass_particle, charge, x_initial, y_initial, z_initial,\
                                                                        vel_x_initial, vel_y_initial, vel_z_initial, dt, \
                                                                        Ex_particle, Ey_particle, Ez_particle,\
                                                                        Bx_particle, By_particle, Bz_particle\
@@ -282,6 +283,7 @@ def error(a,b):
         velocity_analytical[time_index, 1] = (initial_conditions_analytical[3]) # vy
 
       else:
+
         initial_conditions_analytical = old_analytical
 
       # print('Hello', initial_conditions_analytical)
@@ -356,7 +358,8 @@ def error(a,b):
 
 
 
-N = np.array( [32, 64, 128, 256 ] )
+# N = np.array( [32, 64, 128, 256 ] )
+N = np.array( [512 ] )
 # N = np.array([10])
 
 

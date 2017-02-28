@@ -339,7 +339,7 @@ for time_index,t0 in enumerate(time):
 
     # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
 
-    (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial, y_initial, z_initial,\
+    (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(mass_particle, charge, x_initial, y_initial, z_initial,\
                                                                      vel_x_initial, vel_y_initial, vel_z_initial, dt, \
                                                                      Ex_particle, Ey_particle, Ez_particle,\
                                                                      Bx_particle, By_particle, Bz_particle\
