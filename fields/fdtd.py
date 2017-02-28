@@ -184,18 +184,21 @@ example taken.
 
 Now the fields aligned in x and y direction along with the following grids:
 
-Ex  = (x_right, y_center  )
-Ey  = (x_center, y_top    )
-Ez  = (x_center, y_center )
 
-Bx  = (x_center, y_top    )
-By  = (x_right, y_center  )
-Bz  = (x_right, y_top     )
+Ez  = (x_center, y_center ) 0, dt, 2dt, 3dt...
+Bx  = (x_center, y_top    ) -0.5dt, 0.5dt, 1.5dt, 2.5dt...
+By  = (x_right, y_center  ) -0.5dt, 0.5dt, 1.5dt, 2.5dt...
+
+Ex  = (x_right, y_center  ) 0, dt, 2dt, 3dt...
+Ey  = (x_center, y_top    ) 0, dt, 2dt, 3dt...
+Bz  = (x_right, y_top     ) -0.5dt, 0.5dt, 1.5dt, 2.5dt...
 
 rho = (x_center, y_top    )  # Not needed here
-Jx  = (x_right, y_center  )
-Jy  = (x_center, y_top    )
-Jz  = (x_center, y_center )"""
+
+Jx  = (x_right, y_center  ) 0.5dt, 1.5dt, 2.5dt...
+Jy  = (x_center, y_top    ) 0.5dt, 1.5dt, 2.5dt...
+Jz  = (x_center, y_center ) 0.5dt, 1.5dt, 2.5dt...
+"""
 
 
 """ Equations for mode 1 fdtd (variation along x and y)"""
@@ -242,11 +245,6 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
   dt_by_dx = dt / (dx)
   dt_by_dy = dt / (dy)
 
-  """  Defining index grid for updating the fields  """
-
-  X_index, Y_index = np.meshgrid( range(ghost_cells, x_number_of_points-ghost_cells),\
-                                  range(ghost_cells, y_number_of_points-ghost_cells)\
-                                )
 
   """  Updating the Magnetic fields   """
 
@@ -332,10 +330,18 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
   dt_by_dx = dt / (dx)
   dt_by_dy = dt / (dy)
 
-  """  Updating the Magnetic field  """
 
-  Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Ey_local)) \
-              + dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Ex_local))
+
+  """  Updating the Magnetic field  """
+  # print('INSIDE FDTD before Updating Bz, BZ_LOCAL = ', Bz_local)
+  # print('INSIDE FDTD before Updating Bz,  EX_LOCAL = ', Ex_local)
+  # print('INSIDE FDTD before Updating Bz,  EY_LOCAL = ', Ey_local)
+
+  Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Ey_local)) \
+              + dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Ex_local))
+  # print('INSIDE FDTD  After Updating Bz, BZ_LOCAL = ', Bz_local)
+  # print('INSIDE FDTD  After Updating Bz, EX_LOCAL = ', Ex_local)
+  # print('INSIDE FDTD  After Updating Bz, EY_LOCAL = ', Ey_local)
 
   # dBz/dt = - ( dEy/dx - dEx/dy )
 
@@ -343,14 +349,19 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   Bz_local = periodic(Bz_local, y_number_of_points, x_number_of_points, ghost_cells)
 
+
   """  Updating the Electric fields using the current too   """
+  # print('INSIDE FDTD Max Bz = ',af.max(Bz_local))
+  # print('INSIDE FDTD Min Bz = ',af.min(Bz_local))
 
 
-  Ex_local += dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Bz_local)) - Jx * dt
+  Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - Jx * dt
 
+  # print('INSIDE FDTD Max Ex_local = ', af.max(Ex_local))
+  # print('INSIDE FDTD min Ex_local = ', af.min(Ex_local))
   # dEx/dt = + dBz/dy
 
-  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Bz_local)) - Jy * dt
+  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - Jy * dt
 
   # dEy/dt = - dBz/dx
 
@@ -359,6 +370,8 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
   Ex_local = periodic(Ex_local, y_number_of_points, x_number_of_points, ghost_cells)
 
   Ey_local = periodic(Ey_local, y_number_of_points, x_number_of_points, ghost_cells)
+
+
 
   af.eval(Bz_local, Ex_local, Ey_local)
 

@@ -181,29 +181,29 @@ if(fields_enabled == "true"):
   from fields.fdtd import fdtd
   from integrators.magnetic_verlet import integrator
   from fields.current_depositor import dcd, current_b0_depositor, charge_b0_depositor
-  Ez = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
-  Bx = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
-  By = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Ez = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
+  Bx = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
+  By = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
 
-  Bz = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
-  Ex = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
-  Ey = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Bz = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
+  Ex = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
+  Ey = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
 
-  Ez_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
-  Bx_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
-  By_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+  Ez_particle = af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
+  Bx_particle = af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
+  By_particle = af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
 
-  Bz_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
-  Ex_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
-  Ey_particle = af.data.constant(0,no_of_particles, dtype=af.Dtype.f64)
+  Bz_particle = af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
+  Ex_particle = af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
+  Ey_particle = af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
 
-  Jx = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
-  Jy = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
-  Jz = af.data.constant(0,y_center.elements(),x_center.elements(), dtype=af.Dtype.f64)
+  Jx = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
+  Jy = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
+  Jz = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
 
-  X_center_physical = af.tile(af.reorder(x_center[ghost_cells:-ghost_cells],1),y_center[ghost_cells:-ghost_cells].elements(),1)
+  X_center_physical = af.tile(af.reorder(x_center[ghost_cells:-ghost_cells],1), y_center[ghost_cells:-ghost_cells].elements(),1)
 
-  X_right_physical  = af.tile(af.reorder(x_right[ghost_cells:-ghost_cells],1),y_center[ghost_cells:-ghost_cells].elements(),1)
+  X_right_physical  = af.tile(af.reorder(x_right[ghost_cells:-ghost_cells],1), y_center[ghost_cells:-ghost_cells].elements(),1)
 
   Y_center_physical = af.tile(y_center[ghost_cells:-ghost_cells], 1, x_center[ghost_cells:-ghost_cells].elements())
 
@@ -216,9 +216,9 @@ if(fields_enabled == "true"):
 
   # Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
   # Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
-  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * Amplitude_perturbed * (1/k_fourier) * \
+  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge *no_of_particles * Amplitude_perturbed * (1/k_fourier) * \
                                                            af.arith.sin(k_fourier*(X_right_physical))
-
+  print('Ex initialized is ', Ex)
 # Now we shall proceed to evolve the system with time:
 from fields.interpolator import zone_finder, fraction_finder
 
@@ -276,8 +276,17 @@ for time_index,t0 in enumerate(time):
     # print('After current deposition, Jx = ', Jx)
     # print(' Ex is ',((Ex)))
     # input('Whats up')
-    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
+    # Jx = Jx/no_of_particles
+    # Jy = Jy/no_of_particles
+    # jz = Jz/no_of_particles
 
+    # print('Before FDTD Ex max is ',af.max(Ex))
+    # print('Before FDTD Ex min is ',af.min(Ex))
+    # print('Jx max for FDTD is ', af.max(Jx))
+    # print('Jx min for FDTD is ', af.min(Jx))
+    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
+    # print('After FDTD Ex max is ',af.max(Ex_updated))
+    # print('After FDTD Ex min is ',af.min(Ex_updated))
     ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
 
     ## E at ndt and B averaged at ndt to push v at (n-0.5)dt
@@ -338,16 +347,16 @@ for time_index,t0 in enumerate(time):
 
     # SAVING THE FIELDS FOR NEXT TIME STEP
 
-    Ex, Ey, Ez, Bx, By, Bz= Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated
+    Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
     print('time is ',time_index)
     print('dt is ', dt)
-    print('Ex max is ',af.max(Ex))
-    print('Ex min is ',af.min(Ex))
-    print('Jx max is ',af.max(Jx))
-    print('Jx min is ',af.min(Jx))
-    print('Jx is ', Jx)
-    print('x min is', af.min(x_coords))
-    print('x max is ', af.max(x_coords))
+    # print('Ex max is ',af.max(Ex))
+    # print('Ex min is ',af.min(Ex))
+    # print('Jx max is ',af.max(Jx))
+    # print('Jx min is ',af.min(Jx))
+    # print('Jx is ', Jx)
+    # print('x min is', af.min(x_coords))
+    # print('x max is ', af.max(x_coords))
     input('check')
 
     #
@@ -442,8 +451,8 @@ for time_index,t0 in enumerate(time):
     ##h5f.close()
 
 
-  h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
-  h5f.create_dataset('x_coords',   data = x_coords)
-  h5f.create_dataset('y_coords',   data = y_coords)
-  h5f.create_dataset('vel_x',      data = vel_x)
-  h5f.close()
+  # h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
+  # h5f.create_dataset('x_coords',   data = x_coords)
+  # h5f.create_dataset('y_coords',   data = y_coords)
+  # h5f.create_dataset('vel_x',      data = vel_x)
+  # h5f.close()

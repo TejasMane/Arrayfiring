@@ -1,4 +1,4 @@
-no_of_particles      = 20000
+no_of_particles      = 1
 mass_particle        = 1.0
 boltzmann_constant   = 1.0
 
@@ -48,8 +48,8 @@ if(fields_enabled == "true"):
   spread          = 0.1     # Shall be used to assign Gaussian
   ghost_cells     = 1       # Refers to the number of cells beyond the physical domain(usually set to 1)
   speed_of_light  = 1
-  charge          = -1   # Charge of each individual particle in the simulation
-  x_zones_field   = 200     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
+  charge          = 1   # Charge of each individual particle in the simulation
+  x_zones_field   = 10     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
   y_zones_field   = 1     # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
   forward_row     = af.Array([1, -1, 0])
   forward_column  = af.Array([1, -1, 0])
