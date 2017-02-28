@@ -284,7 +284,7 @@ for time_index,t0 in enumerate(time):
     # print('Before FDTD Ex min is ',af.min(Ex))
     # print('Jx max for FDTD is ', af.max(Jx))
     # print('Jx min for FDTD is ', af.min(Jx))
-    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz)
+    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz, dt)
     # print('After FDTD Ex max is ',af.max(Ex_updated))
     # print('After FDTD Ex min is ',af.min(Ex_updated))
     ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)

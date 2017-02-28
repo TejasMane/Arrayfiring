@@ -81,7 +81,6 @@ length_box_z     = params.length_box_z
 # dBy/dt = +dEz/dx
 # div_B  = dBx/dx + dBy/dy
 
-
 """ Equations for mode 2 FDTD"""
 
 # dBz/dt = - ( dEy/dx - dEx/dy )
@@ -208,7 +207,7 @@ Jz  = (x_center, y_center ) 0.5dt, 1.5dt, 2.5dt...
 # dBy/dt = +dEz/dx
 # div_B = dBx/dx + dBy/dy
 
-def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
+def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
 
   """ Number of grid points in the field's domain"""
 
@@ -237,8 +236,6 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   dx = np.float(Lx / (Nx))
   dy = np.float(Ly / (Ny))
-  dt = np.float(dx / (2 * c))
-
 
   """ defining variables for convenience """
 
@@ -293,7 +290,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 # div_B = dBz/dz
 
 
-def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
+def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
 
   """ Number of grid points in the field's domain """
 
@@ -323,7 +320,6 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
   dx = np.float(Lx / (Nx))
   dy = np.float(Ly / (Ny))
-  dt = np.float(dx / (2 * c))
 
   """ defining variable for convenience """
 
@@ -333,15 +329,9 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
 
   """  Updating the Magnetic field  """
-  # print('INSIDE FDTD before Updating Bz, BZ_LOCAL = ', Bz_local)
-  # print('INSIDE FDTD before Updating Bz,  EX_LOCAL = ', Ex_local)
-  # print('INSIDE FDTD before Updating Bz,  EY_LOCAL = ', Ey_local)
 
   Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Ey_local)) \
               + dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Ex_local))
-  # print('INSIDE FDTD  After Updating Bz, BZ_LOCAL = ', Bz_local)
-  # print('INSIDE FDTD  After Updating Bz, EX_LOCAL = ', Ex_local)
-  # print('INSIDE FDTD  After Updating Bz, EY_LOCAL = ', Ey_local)
 
   # dBz/dt = - ( dEy/dx - dEx/dy )
 
@@ -351,14 +341,9 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
 
   """  Updating the Electric fields using the current too   """
-  # print('INSIDE FDTD Max Bz = ',af.max(Bz_local))
-  # print('INSIDE FDTD Min Bz = ',af.min(Bz_local))
-
 
   Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - Jx * dt
 
-  # print('INSIDE FDTD Max Ex_local = ', af.max(Ex_local))
-  # print('INSIDE FDTD min Ex_local = ', af.min(Ex_local))
   # dEx/dt = + dBz/dy
 
   Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - Jy * dt
@@ -379,13 +364,13 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz ):
 
 """-------------------------------------------------End--of--Mode--2-------------------------------------------------"""
 
-def fdtd(Ex, Ey, Ez, Bx, By, Bz, c, Lx, Ly, ghost_cells, Jx, Jy, Jz):
+def fdtd(Ex, Ey, Ez, Bx, By, Bz, c, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt):
 
   # Decoupling the fields to solve for them individually
 
-  Ez_updated, Bx_updated, By_updated = mode1_fdtd(Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz)
+  Ez_updated, Bx_updated, By_updated = mode1_fdtd(Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt)
 
-  Bz_updated, Ex_updated, Ey_updated = mode2_fdtd(Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz )
+  Bz_updated, Ex_updated, Ey_updated = mode2_fdtd(Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt)
   af.eval(Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated)
 
   # combining the the results from both modes

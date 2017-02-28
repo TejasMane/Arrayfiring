@@ -186,7 +186,7 @@ def field_error_convergence(a, b):
       # print('grid size = ', Nx, 'time = ', time_index)
 
       Jx, Jy, Jz = 0, 0, 0
-      Ex, Ey, Ez, Bx, By, Bz = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, Lx, Ly, ghost_cells, Jx, Jy, Jz)
+      Ex, Ey, Ez, Bx, By, Bz = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt)
 
 
       #Divergence Computation
@@ -269,7 +269,7 @@ def field_error_convergence(a, b):
 
 # Change here according to need
 
-N = af.Array([32, 64, 128, 256, 512, 1024])
+N = af.Array([32, 64, 128, 256, 512])
 
 # for making movies for 100*100 comment the above statement and uncomment the following line
 

@@ -4,6 +4,7 @@ import pylab as pl
 import arrayfire as af
 from fields.interpolator import fraction_finder
 
+
 pl.rcParams['figure.figsize'] = 12, 7.5
 pl.rcParams['lines.linewidth'] = 1.5
 pl.rcParams['font.family'] = 'serif'
@@ -123,9 +124,7 @@ def interpolation_error_convergence(a, b):
                                                                                 Y_center_physical
                                                                                 )
 
-        Bx[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = initial_fields(X_center_physical, \
-                                                                                Y_top_physical \
-                                                                                )
+        Bx[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = initial_fields(X_center_physical,   Y_top_physical )
 
         By[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = initial_fields(X_right_physical, \
                                                                                 Y_center_physical \
@@ -141,7 +140,7 @@ def interpolation_error_convergence(a, b):
 
         """ Selecting a number of test points for testing error """
 
-        number_random_points = 2
+        number_random_points = 50
 
         x_random = (af.randu(number_random_points)).as_type(af.Dtype.f64)
         y_random = (af.randu(number_random_points)).as_type(af.Dtype.f64)
@@ -154,25 +153,19 @@ def interpolation_error_convergence(a, b):
 
         fracs_Ez_x, fracs_Ez_y = fraction_finder(x_random, y_random, x_center, y_center)
 
-        # print('x is ', x_random)
-        # print('y is ', y_random)
-        # print('x_center is ', x_center)
-        # print('y_center is ', y_center)
-        # print('fracs_Ez_x is ', fracs_Ez_x)
-        # print('fracs_Ez_y is ', fracs_Ez_y)
-        # print('Ez is ', Ez)
 
         fracs_Bx_x, fracs_Bx_y = fraction_finder(x_random, y_random, x_center, y_top)
+
 
         fracs_By_x, fracs_By_y = fraction_finder(x_random, y_random, x_right, y_center)
 
         """ Calculating interpolated values at the randomly selected points """
 
-        Ez_at_random = af.signal.approx2(Ez, fracs_Ez_y, fracs_Ez_x)
+        Ez_at_random = af.signal.approx2(Ez, fracs_Ez_y, fracs_Ez_x, method= af.INTERP.LINEAR)
 
-        Bx_at_random = af.signal.approx2(Bx, fracs_Bx_y, fracs_Bx_x)
+        Bx_at_random = af.signal.approx2(Bx, fracs_Bx_y, fracs_Bx_x, method= af.INTERP.LINEAR)
 
-        By_at_random = af.signal.approx2(By, fracs_By_y, fracs_By_x)
+        By_at_random = af.signal.approx2(By, fracs_By_y, fracs_By_x, method= af.INTERP.LINEAR)
 
         """ Calculating average errors in the interpolated values at the randomly selected points """
 
