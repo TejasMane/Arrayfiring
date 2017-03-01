@@ -290,7 +290,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt,no_of_particl
 # div_B = dBz/dz
 
 
-def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
+def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_particles):
 
   """ Number of grid points in the field's domain """
 
@@ -364,13 +364,13 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
 
 """-------------------------------------------------End--of--Mode--2-------------------------------------------------"""
 
-def fdtd(Ex, Ey, Ez, Bx, By, Bz, c, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt):
+def fdtd(Ex, Ey, Ez, Bx, By, Bz, c, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt, no_of_particles):
 
   # Decoupling the fields to solve for them individually
 
-  Ez_updated, Bx_updated, By_updated = mode1_fdtd(Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt)
+  Ez_updated, Bx_updated, By_updated = mode1_fdtd(Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_particles)
 
-  Bz_updated, Ex_updated, Ey_updated = mode2_fdtd(Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt)
+  Bz_updated, Ex_updated, Ey_updated = mode2_fdtd(Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_particles)
   af.eval(Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated)
 
   # combining the the results from both modes

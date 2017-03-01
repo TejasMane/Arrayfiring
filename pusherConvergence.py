@@ -217,7 +217,10 @@ def error(a,b):
 
       Jx, Jy, Jz = 0, 0, 0
       
-      Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt)
+      Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(  Ex, Ey, Ez, Bx, By, Bz, \
+                                                                                      speed_of_light, Lx, Ly, \
+                                                                                      ghost_cells, Jx, Jy, Jz, \
+                                                                                      dt, no_of_particles)
 
       if(time_index==0):
 

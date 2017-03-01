@@ -216,7 +216,7 @@ if(fields_enabled == "true"):
 
   # Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
   # Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
-  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge *no_of_particles * Amplitude_perturbed * (1/k_fourier) * \
+  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * Amplitude_perturbed * (1/k_fourier) * \
                                                            af.arith.sin(k_fourier*(X_right_physical))
   print('Ex initialized is ', Ex)
 # Now we shall proceed to evolve the system with time:
@@ -287,7 +287,7 @@ for time_index,t0 in enumerate(time):
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
                                                                                    speed_of_light, length_box_x,\
                                                                                    length_box_y, ghost_cells, Jx, Jy,\
-                                                                                   Jz, dt\
+                                                                                   Jz, dt, no_of_particles\
                                                                                  )
     # print('After FDTD Ex max is ',af.max(Ex_updated))
     # print('After FDTD Ex min is ',af.min(Ex_updated))

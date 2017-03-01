@@ -176,7 +176,7 @@ def error(a,b):
     # Initializing the non relevant fields:
 
     Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = af.arith.sin(2*np.pi*(-X_right_physical))
-    Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = af.arith.sin(2*np.pi*((dt/2)-X_right_physical))
+    Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = af.arith.sin(2*np.pi*(-(dt/2)-X_right_physical))
 
     #Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 20
 
@@ -217,7 +217,10 @@ def error(a,b):
 
       Jx, Jy, Jz = 0, 0, 0
       
-      Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt)
+      Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(  Ex, Ey, Ez, Bx, By, Bz, \
+                                                                                      speed_of_light, Lx, Ly, \
+                                                                                      ghost_cells, Jx, Jy, Jz, \
+                                                                                      dt, no_of_particles)
 
       if(time_index==0):
 
@@ -283,6 +286,7 @@ def error(a,b):
         velocity_analytical[time_index, 1] = (initial_conditions_analytical[3]) # vy
 
       else:
+
         initial_conditions_analytical = old_analytical
 
       # print('Hello', initial_conditions_analytical)

@@ -60,7 +60,7 @@ length_box_z     = params.length_box_z
 # field_error_convergence(a, b) returns the errors in field variables calculated after the waves come 
 # back to their initial position on a spatial grid with a*b dimensions
 
-
+no_of_particles = 1
 
 def gauss1D(x):
 
@@ -186,7 +186,7 @@ def field_error_convergence(a, b):
       # print('grid size = ', Nx, 'time = ', time_index)
 
       Jx, Jy, Jz = 0, 0, 0
-      Ex, Ey, Ez, Bx, By, Bz = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt)
+      Ex, Ey, Ez, Bx, By, Bz = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, Lx, Ly, ghost_cells, Jx, Jy, Jz, dt, no_of_particles)
 
 
       #Divergence Computation
