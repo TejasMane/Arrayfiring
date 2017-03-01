@@ -207,7 +207,7 @@ Jz  = (x_center, y_center ) 0.5dt, 1.5dt, 2.5dt...
 # dBy/dt = +dEz/dx
 # div_B = dBx/dx + dBy/dy
 
-def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
+def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt,no_of_particles):
 
   """ Number of grid points in the field's domain"""
 
@@ -264,7 +264,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
 
   Ez_local +=   dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, By_local)) \
               - dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bx_local)) \
-              - dt*Jz
+              - dt*(Jz/no_of_particles)
 
   # dEz/dt = dBy/dx - dBx/dy
 
@@ -342,11 +342,11 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt):
 
   """  Updating the Electric fields using the current too   """
 
-  Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - Jx * dt
+  Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - (Jx/no_of_particles) * dt
 
   # dEx/dt = + dBz/dy
 
-  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - Jy * dt
+  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - (Jy/no_of_particles) * dt
 
   # dEy/dt = - dBz/dx
 

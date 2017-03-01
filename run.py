@@ -284,7 +284,11 @@ for time_index,t0 in enumerate(time):
     # print('Before FDTD Ex min is ',af.min(Ex))
     # print('Jx max for FDTD is ', af.max(Jx))
     # print('Jx min for FDTD is ', af.min(Jx))
-    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd(Ex, Ey, Ez, Bx, By, Bz, speed_of_light, length_box_x,length_box_y, ghost_cells, Jx, Jy, Jz, dt)
+    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
+                                                                                   speed_of_light, length_box_x,\
+                                                                                   length_box_y, ghost_cells, Jx, Jy,\
+                                                                                   Jz, dt\
+                                                                                 )
     # print('After FDTD Ex max is ',af.max(Ex_updated))
     # print('After FDTD Ex min is ',af.min(Ex_updated))
     ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
@@ -348,16 +352,40 @@ for time_index,t0 in enumerate(time):
     # SAVING THE FIELDS FOR NEXT TIME STEP
 
     Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
-    print('time is ',time_index)
-    print('dt is ', dt)
+    # print('time is ',time_index)
+    # print('dt is ', dt)
     # print('Ex max is ',af.max(Ex))
     # print('Ex min is ',af.min(Ex))
     # print('Jx max is ',af.max(Jx))
     # print('Jx min is ',af.min(Jx))
     # print('Jx is ', Jx)
-    # print('x min is', af.min(x_coords))
-    # print('x max is ', af.max(x_coords))
-    input('check')
+    # if(time_index%100 ==0):
+      # print('time is ',time_index)
+    #   print('dt is ', dt)
+    #   print('Ex max is ',af.max(Ex))
+    #   print('Ex min is ',af.min(Ex))
+    #   print('Bz max is ',af.max(Bz))
+    #   print('Bz min is ',af.min(Bz))
+    #   print('Ey max is ',af.max(Ey))
+    #   print('Ey min is ',af.min(Ey))
+    #   print('Jx max is ',af.max(Jx))
+    #   print('Jx min is ',af.min(Jx))
+    #   print('Jy max is ',af.max(Jy))
+    #   print('Jy min is ',af.min(Jy))
+    #   print('Jz max is ',af.max(Jz))
+    #   print('Jz min is ',af.min(Jz))
+      #
+    #   print('Ez max is ',af.max(Ez))
+    #   print('Ez min is ',af.min(Ez))
+    #   print('Bx max is ',af.max(Bx))
+    #   print('Bx min is ',af.min(Bx))
+    #   print('By max is ',af.max(By))
+    #   print('By min is ',af.min(By))
+
+      # print('Jx is ', Jx)
+    #   print('x min is', af.min(x_coords))
+    #   print('x max is ', af.max(x_coords))
+    # input('check')
 
     #
     # if(time_index == 10):
@@ -366,8 +394,11 @@ for time_index,t0 in enumerate(time):
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
   (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
-
-
+  print('Jx is', Jx)
+  print('Ex = ', Ex)
+  print('Ey = ', Ey)
+  print('Bz = ', Bz)
+  input('CHECK')
   # (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \
   #                                                                          vel_x_initial, vel_y_initial, vel_z_initial, dt\
   #                                                                         )
