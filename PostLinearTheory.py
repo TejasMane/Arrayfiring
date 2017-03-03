@@ -6,7 +6,6 @@ import arrayfire as af
 import initialize
 from scipy.integrate import odeint
 
-
 pl.rcParams['figure.figsize']  = 12, 7.5
 pl.rcParams['lines.linewidth'] = 1.5
 pl.rcParams['font.family']     = 'serif'
@@ -74,16 +73,19 @@ vel_z_initial = h5f['vel_z'][:]
 vel_z_initial     = af.to_array(0.2*vel_z_initial)
 
 h5f.close()
+
+
+
 x_temp = np.linspace(0,1,100)
 a, b = np.histogram(x_initial, bins=(x_divisions), range=(left_boundary, right_boundary))
 a = (a / (no_of_particles / x_divisions))
-pl.plot(x_temp,a)
-pl.xlabel('$x$')
-pl.ylabel(r'$\delta\rho(x)$')
-pl.ylim(0.0,2.0)
-# pl.savefig('data_files/images/' + '%04d'%(0) + '.png')
-pl.show()
-pl.clf()
+# pl.plot(x_temp,a)
+# pl.xlabel('$x$')
+# pl.ylabel(r'$\delta\rho(x)$')
+# pl.ylim(0.0,2.0)
+# # pl.savefig('data_files/images/' + '%04d'%(0) + '.png')
+# pl.show()
+# pl.clf()
 
 
 # print(max(vel_x_initial))
@@ -98,13 +100,15 @@ pl.clf()
 # pl.clf()
 
 
-data = np.zeros((time.size), dtype = np.float)
+data = np.zeros((time.size/100), dtype = np.float)
+dataEx = np.zeros((time.size/100), dtype = np.float)
 
 divisions_for_histogram_x = x_divisions/10
 
 divisions_for_histogram = divisions_for_histogram_x
-
-
+dx = af.sum(x_center[1]-x_center[0])
+dt         = np.float(dx / (0.2))
+time_mill       = np.linspace(0,3,60)
 
 
 # x_temp = np.linspace(0,1,100)
@@ -115,15 +119,19 @@ for time_index,t0 in enumerate(time):
         print(time_index)
     if(time_index == time.size -1):
         break
-    # if (time_index % 10 == 0):
-    h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'r')
-    x_coords = h5f['x_coords'][:]
-    y_coords = h5f['y_coords'][:]
-    h5f.close()
+    if (time_index % 100 == 0):
+        h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'r')
+        Ex = h5f['Ex'][:]
+        x_coords = h5f['x_coords'][:]
+        # y_coords = h5f['y_coords'][:]
+        h5f.close()
+        Ex = af.to_array(Ex)
+        print(max(x_coords))
+        print(min(x_coords))
 
-
-    a,b = np.histogram(x_coords, bins=(divisions_for_histogram), range = (0,1))
-    data[time_index] = max(abs(a/(no_of_particles/divisions_for_histogram_x)))-1
+        a,b = np.histogram(x_coords, bins=(divisions_for_histogram), range = (0,1))
+        data[time_index/100] = max(abs(a/(no_of_particles/divisions_for_histogram_x)))-1
+        dataEx[time_index/100] = af.max(Ex)
     # print('time = ', time_index, 'Amplitude = ', max(a))
     # pl.plot(a)
     # pl.savefig('data_files/images/' + '%04d' % (time_index) + '.png')
@@ -134,7 +142,7 @@ for time_index,t0 in enumerate(time):
 m = 1
 K = 1
 T = 1
-e =-1
+e =-10
 # In[ ]:
 
 # k for the mode in fourier space
@@ -177,8 +185,8 @@ def diff_delta_f(Y,t):
     int_Df_r = np.sum(f_r) * (velocity_x[1]-velocity_x[0])
 
     # This the derivate for f_r and f_i given in the latex document
-    dYdt =np.concatenate([(k * velocity_x * f_i) - e*(int_Df_i * diff_f_0_v(velocity_x)/k ), \
-                           -(k * velocity_x * f_r) + e*(int_Df_r * diff_f_0_v(velocity_x)/k )\
+    dYdt =np.concatenate([(k * velocity_x * f_i) - e*e*(int_Df_i * diff_f_0_v(velocity_x)/k ), \
+                           -(k * velocity_x * f_r) + e*e*(int_Df_r * diff_f_0_v(velocity_x)/k )\
                          ], axis = 0)
     # This returns the derivative for the coupled set of ODE
 
@@ -191,8 +199,8 @@ def diff_delta_f_Ex(Y,t):
     E_x_r = Y[2 * len(velocity_x)]
     E_x_i = Y[2 * len(velocity_x) + 1]
 
-    int_v_delta_f_dv_i = np.sum(f_i * velocity_x) * (dv)
-    int_v_delta_f_dv_r = np.sum(f_r * velocity_x) * (dv)
+    int_v_delta_f_dv_i = e * np.sum(f_i * velocity_x) * (dv)
+    int_v_delta_f_dv_r = e * np.sum(f_r * velocity_x) * (dv)
     int_v_delta_f_dv = np.array([int_v_delta_f_dv_r, int_v_delta_f_dv_i ] )
 
     # This the derivate for f_r and f_i given in the latex document
@@ -213,12 +221,12 @@ delta_f_initial[0: len(velocity_x)] = 0.5 * f_0(velocity_x)
 
 delta_f_Ex_initial = np.zeros((2 * len(velocity_x)+2), dtype = np.float)
 delta_f_Ex_initial[0 : len(velocity_x)] = 0.5 * f_0(velocity_x)
-delta_f_Ex_initial[2 * len(velocity_x) + 1] = -1 * (1/k) * np.sum(delta_f_Ex_initial[0: len(velocity_x)] ) * dv
+delta_f_Ex_initial[2 * len(velocity_x) + 1] = -1 * e * (1/k) * np.sum(delta_f_Ex_initial[0: len(velocity_x)] ) * dv
 
 # In[ ]:
 
 # Setting the parameters for time here
-final_time = 40
+final_time = 4
 dt = 0.001
 time_ana = np.arange(0, final_time, dt)
 
@@ -236,8 +244,12 @@ old_delta_f_Ex = np.zeros((2 * len(velocity_x) + 2 ), dtype = np.float)
 
 delta_rho1 = np.zeros(len(time_ana), dtype = np.float)
 delta_rho2 = np.zeros(len(time_ana), dtype = np.float)
+Ex_amp  = np.zeros(len(time_ana), dtype = np.float)
+Ex_amp2 = np.zeros(len(time_ana), dtype = np.float)
+# Ex_amp3 = np.zeros(len(time_ana), dtype = np.float)
 delta_f_temp = np.zeros(2 * len(velocity_x), dtype=np.float)
 temperory_delta_f_Ex = np.zeros(2 * len(velocity_x) + 2, dtype=np.float)
+
 # In[ ]:
 
 for time_index, t0 in enumerate(time_ana):
@@ -273,46 +285,67 @@ for time_index, t0 in enumerate(time_ana):
     temperory_delta_f_Ex = odeint(diff_delta_f_Ex, initial_conditions_delta_f_Ex, t)[1]
 
     # Saving delta rho for current time_index
-    delta_rho1[time_index] = ((sum(dv * temperory_delta_f[0: len(velocity_x)])))
-    delta_rho2[time_index] = ((sum(dv * temperory_delta_f_Ex[0: len(velocity_x)])))
+    delta_rho1[time_index] = ((sum(dv * temperory_delta_f[ 0: len(velocity_x)])))
+    delta_rho2[time_index] = ((sum(dv * temperory_delta_f_Ex[ 0: len(velocity_x)])))
+    Ex_amp[time_index] = (e/k)*sum(  dv * temperory_delta_f[ 0: len(velocity_x)]  )
+    Ex_amp2[time_index] = (e/k)*(    sum  (  dv * temperory_delta_f_Ex[ 0: len(velocity_x)]     ))
 
     # Saving the solution for to use it for the next time step
     old_delta_f = temperory_delta_f.copy()
     old_delta_f_Ex = temperory_delta_f_Ex.copy()
 
 
-h5f = h5py.File('data_files/LT.h5', 'w')
-h5f.create_dataset('delta_rho1',   data = delta_rho1)
-h5f.create_dataset('delta_rho2',   data = delta_rho2)
-h5f.close()
 
 
-h5f           = h5py.File('data_files/LT.h5', 'r')
-delta_rho1     = h5f['delta_rho1'][:]
-delta_rho2     = h5f['delta_rho2'][:]
-h5f.close()
+# print('ExAmp is ', Ex_amp)
+# h5f = h5py.File('data_files/LT.h5', 'w')
+# h5f.create_dataset('delta_rho1',   data = delta_rho1)
+# h5f.create_dataset('delta_rho2',   data = delta_rho2)
+# h5f.create_dataset('Ex_amp',   data = Ex_amp)
+# h5f.close()
+#
+#
+# h5f           = h5py.File('data_files/LT.h5', 'r')
+# delta_rho1     = h5f['delta_rho1'][:]
+# delta_rho2     = h5f['delta_rho2'][:]
+# Ex_amp     = h5f['Ex_amp'][:]
+# h5f.close()
 
 # print('data is ', data)
 
 # Plotting the required quantities here
+# pl.plot(time_ana, abs((Ex_amp)),label = '$LT1$')
+# pl.plot(time_ana, abs((Ex_amp2)),label = '$LT2$')
 
-pl.plot(time_ana, (abs(delta_rho1)),label = '$\mathrm{Linear\;Theory}$')
-pl.plot(time_ana, (abs(delta_rho2)),label = '$\mathrm{Linear\;Theory2}$')
-# pl.plot(time,data,label = '$\mathrm{Numerical\;PIC}$')
+pl.plot(time_ana, (abs(delta_rho1)),label = '$\mathrm{Linear\;Theory\;fields}$')
+pl.plot(time_ana, (abs(delta_rho2)),label = '$\mathrm{Linear\;Theory\;No\;fields}$')
+pl.plot(time_mill,data,label = '$\mathrm{Numerical\;PIC}$')
+# print('t',time_mill.size)
+# print('Ex',dataEx.size)
+
+# pl.plot(time_mill,dataEx,label = '$\mathrm{Numerical\;PIC}$')
 pl.xlabel('$\mathrm{time}$')
-pl.ylabel(r'$\delta \hat{\rho}\left(t\right)$')
-pl.title('$\mathrm{Linear\;Landau\;damping}$')
+# pl.ylabel(r'$\delta \hat{\rho}\left(t\right)$')
+pl.ylabel(r'$\delta \hat{\Ex}\left(t\right)$')
+
+pl.title('$\mathrm{Linear\;Landau\;damping$')
 pl.legend()
 # pl.ylim(0, 0.7)
 # pl.xlim(0,2)
 pl.show()
 
-pl.plot(time_ana, np.log(abs(delta_rho1)),label = '$\mathrm{Linear\;Theory}$')
-pl.plot(time_ana, np.log(abs(delta_rho2)),label = '$\mathrm{Linear\;Theory}$')
-# pl.plot(time,np.log(abs(data)),label = '$\mathrm{Numerical\;PIC}$')
+
+# pl.plot(time_ana, np.log(abs(Ex_amp)),label = '$LT1$')
+# pl.plot(time_ana, np.log(abs(Ex_amp2)),label = '$LT2$')
+
+pl.plot(time_ana, np.log(abs(delta_rho1)),label = '$\mathrm{Linear\;Theory\;with\;fields}$')
+pl.plot(time_ana, np.log(abs(delta_rho2)),label = '$\mathrm{Linear\;Theory\;No\;fields}$')
+pl.plot(time_mill,np.log(abs(data)),label = '$\mathrm{Numerical\;PIC}$')
+# pl.plot(time_mill,np.log(abs(dataEx)),label = '$\mathrm{Numerical\;PIC}$')
 pl.xlabel('$\mathrm{time}$')
 # pl.xlim(0,2)
-pl.ylabel(r'$\delta \hat{\rho}\left(t\right)$')
+# pl.ylabel(r'$log(\delta \hat{\rho}\left(t\right))$')
+pl.ylabel(r'$\log(\delta \hat{E_{x}}\left(t\right))$')
 pl.title('$\mathrm{Linear\;Landau\;damping}$')
 pl.legend()
 pl.show()

@@ -83,7 +83,7 @@ length_box_z     = params.length_box_z
 
 """Charge Deposition for B0 splines (Have to vectorize)"""
 
-
+# charge b0 depositor
 def charge_b0_depositor(x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   x_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
@@ -126,14 +126,70 @@ def charge_b0_depositor(x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   return x_charge_zone, y_charge_zone, charge_by_dxdy
 
+# b1 charge depositor
+def charge_b1_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
+
+  number_of_particles = x.elements()
+
+  x_current_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
+  y_current_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
+
+  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+
+  dx = Lx/nx
+  dy = Ly/ny
+
+  x_zone = (((af.abs(x - af.sum(x_grid[0])))/dx).as_type(af.Dtype.u32))
+  y_zone = (((af.abs(y - af.sum(y_grid[0])))/dy).as_type(af.Dtype.u32))
+
+  x_zone_plus = x_zone + 1
+  y_zone_plus = y_zone + 1
+
+  dy_by_delta_y = (1/dy) * (y-y_grid[y_zone])
+  dy_by_delta_y_complement = 1 - dy_by_delta_y
+
+  dx_by_delta_x = (1/dx) * (x-x_grid[x_zone])
+  dx_by_delta_x_complement = 1 - dx_by_delta_x
+
+  weight_d1 = dy_by_delta_y_complement * dx_by_delta_x_complement
+  weight_d2 = dy_by_delta_y * dx_by_delta_x_complement
+  weight_d3 = dy_by_delta_y * dx_by_delta_x
+  weight_d4 = dy_by_delta_y_complement * dx_by_delta_x
+
+  charge_by_dxdy = ((charge/(dx*dy))).as_type(af.Dtype.f64)
+
+  d1_corners   = weight_d1 * charge_by_dxdy
+  d2_corners   = weight_d2 * charge_by_dxdy
+  d3_corners   = weight_d3 * charge_by_dxdy
+  d4_corners   = weight_d4 * charge_by_dxdy
+
+  all_corners_weighted_charge = af.join(0,d1_corners, d2_corners, d3_corners, d4_corners)
+
+  x_current_zone[0 * number_of_particles : 1 * number_of_particles] = x_zone
+  x_current_zone[1 * number_of_particles : 2 * number_of_particles] = x_zone
+  x_current_zone[2 * number_of_particles : 3 * number_of_particles] = x_zone_plus
+  x_current_zone[3 * number_of_particles : 4 * number_of_particles] = x_zone_plus
+
+  y_current_zone[0 * number_of_particles : 1 * number_of_particles] = y_zone
+  y_current_zone[1 * number_of_particles : 2 * number_of_particles] = y_zone_plus
+  y_current_zone[2 * number_of_particles : 3 * number_of_particles] = y_zone_plus
+  y_current_zone[3 * number_of_particles : 4 * number_of_particles] = y_zone
+
+  af.eval(x_current_zone, y_current_zone)
+  af.eval(all_corners_weighted_charge)
+
+  return x_current_zone, y_current_zone, all_corners_weighted_charge
+
+
 
 """Current Deposition for B0 splines (Vectorized)"""
 
-
+# current b0 depositor
 def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
-  y_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
+  y_current_zone = af.data.constant(0,y.elements(), dtype=af.Dtype.u32)
 
   nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
   ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
@@ -170,8 +226,80 @@ def current_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
   af.eval(y_current_zone, x_current_zone)
   af.eval(current_by_dxdy)
 
-
   return x_current_zone, y_current_zone, current_by_dxdy
+
+
+
+# b1 depositor Anti Clockwise d1 to d4 with d1 being the bottom left corner
+# and d4 being the bottom right corner
+def current_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
+
+  number_of_particles = x.elements()
+
+  x_current_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
+  y_current_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
+
+  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+
+  dx = Lx/nx
+  dy = Ly/ny
+
+  x_zone = (((af.abs(x - af.sum(x_grid[0])))/dx).as_type(af.Dtype.u32))
+  y_zone = (((af.abs(y - af.sum(y_grid[0])))/dy).as_type(af.Dtype.u32))
+
+  x_zone_plus = x_zone + 1
+  y_zone_plus = y_zone + 1
+
+  dy_by_delta_y = (1/dy) * (y-y_grid[y_zone])
+  dy_by_delta_y_complement = 1 - dy_by_delta_y
+
+  dx_by_delta_x = (1/dx) * (x-x_grid[x_zone])
+  dx_by_delta_x_complement = 1 - dx_by_delta_x
+
+  weight_d1 = dy_by_delta_y_complement * dx_by_delta_x_complement
+  weight_d2 = dy_by_delta_y * dx_by_delta_x_complement
+  weight_d3 = dy_by_delta_y * dx_by_delta_x
+  weight_d4 = dy_by_delta_y_complement * dx_by_delta_x
+
+  current_by_dxdy = ((charge/(dx*dy))*velocity_required).as_type(af.Dtype.f64)
+
+  d1_corners   = weight_d1 * current_by_dxdy
+  d2_corners   = weight_d2 * current_by_dxdy
+  d3_corners   = weight_d3 * current_by_dxdy
+  d4_corners   = weight_d4 * current_by_dxdy
+
+  all_corners_weighted_current = af.join(0,d1_corners, d2_corners, d3_corners, d4_corners)
+
+  x_current_zone[0 * number_of_particles : 1 * number_of_particles] = x_zone
+  x_current_zone[1 * number_of_particles : 2 * number_of_particles] = x_zone
+  x_current_zone[2 * number_of_particles : 3 * number_of_particles] = x_zone_plus
+  x_current_zone[3 * number_of_particles : 4 * number_of_particles] = x_zone_plus
+
+  y_current_zone[0 * number_of_particles : 1 * number_of_particles] = y_zone
+  y_current_zone[1 * number_of_particles : 2 * number_of_particles] = y_zone_plus
+  y_current_zone[2 * number_of_particles : 3 * number_of_particles] = y_zone_plus
+  y_current_zone[3 * number_of_particles : 4 * number_of_particles] = y_zone
+
+  af.eval(x_current_zone, y_current_zone)
+  af.eval(all_corners_weighted_current)
+
+  return x_current_zone, y_current_zone, all_corners_weighted_current
+
+
+# # Test script for b1 depositor
+# from fields.current_depositor import current_b1_depositor
+# charge = 1
+# x1 = af.Array([0.2,0.6])
+# y1 = af.Array([0.2,0.6])
+# velocity_required = af.Array([1.0,1.0])
+# x_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
+# y_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
+# ghost_cells = 1
+# Lx = 1.0
+# Ly = 1.0
+#
+# print(current_b1_depositor(charge, x1, y1, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly))
 
 
 
@@ -180,7 +308,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
         x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy\
        ):
 
-
+  # print('charge is ', charge)
   x_right_grid = x_center_grid + dx/2
   y_top_grid = y_center_grid + dy/2
 

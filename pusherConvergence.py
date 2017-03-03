@@ -361,8 +361,8 @@ def error(a,b):
 
 
 
-# N = np.array( [32, 64, 128, 256 ] )
-N = np.array( [512 ] )
+N = np.array( [32, 64, 128, 256 ] )
+#N = np.array( [512 ] )
 # N = np.array([10])
 
 

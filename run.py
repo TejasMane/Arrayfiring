@@ -362,18 +362,18 @@ for time_index,t0 in enumerate(time):
     # if(time_index%100 ==0):
       # print('time is ',time_index)
     #   print('dt is ', dt)
-    #   print('Ex max is ',af.max(Ex))
-    #   print('Ex min is ',af.min(Ex))
-    #   print('Bz max is ',af.max(Bz))
-    #   print('Bz min is ',af.min(Bz))
-    #   print('Ey max is ',af.max(Ey))
-    #   print('Ey min is ',af.min(Ey))
-    #   print('Jx max is ',af.max(Jx))
-    #   print('Jx min is ',af.min(Jx))
-    #   print('Jy max is ',af.max(Jy))
-    #   print('Jy min is ',af.min(Jy))
-    #   print('Jz max is ',af.max(Jz))
-    #   print('Jz min is ',af.min(Jz))
+    # print('Ex max is ',af.max(Ex))
+    # print('Ex min is ',af.min(Ex))
+    # print('Bz max is ',af.max(Bz))
+    # print('Bz min is ',af.min(Bz))
+    # print('Ey max is ',af.max(Ey))
+    # print('Ey min is ',af.min(Ey))
+    # print('Jx max is ',af.max(Jx)/no_of_particles)
+    # print('Jx min is ',af.min(Jx)/no_of_particles)
+    # print('Jy max is ',af.max(Jy)/no_of_particles)
+    # print('Jy min is ',af.min(Jy)/no_of_particles)
+    # print('Jz max is ',af.max(Jz)/no_of_particles)
+    # print('Jz min is ',af.min(Jz)/no_of_particles)
       #
     #   print('Ez max is ',af.max(Ez))
     #   print('Ez min is ',af.min(Ez))
@@ -383,8 +383,8 @@ for time_index,t0 in enumerate(time):
     #   print('By min is ',af.min(By))
 
       # print('Jx is ', Jx)
-    #   print('x min is', af.min(x_coords))
-    #   print('x max is ', af.max(x_coords))
+    # print('x min is', af.min(x_coords))
+    # print('x max is ', af.max(x_coords))
     # input('check')
 
     #
@@ -394,11 +394,11 @@ for time_index,t0 in enumerate(time):
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
   (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
-  print('Jx is', Jx)
-  print('Ex = ', Ex)
-  print('Ey = ', Ey)
-  print('Bz = ', Bz)
-  input('CHECK')
+  # print('Jx is', Jx)
+  # print('Ex = ', Ex)
+  # print('Ey = ', Ey)
+  # print('Bz = ', Bz)
+  # input('CHECK')
   # (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \
   #                                                                          vel_x_initial, vel_y_initial, vel_z_initial, dt\
   #                                                                         )
@@ -481,9 +481,8 @@ for time_index,t0 in enumerate(time):
 
     ##h5f.close()
 
-
-  # h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
-  # h5f.create_dataset('x_coords',   data = x_coords)
-  # h5f.create_dataset('y_coords',   data = y_coords)
-  # h5f.create_dataset('vel_x',      data = vel_x)
-  # h5f.close()
+  if(time_index%100==0):
+    h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
+    h5f.create_dataset('x_coords',   data = x_coords)
+    h5f.create_dataset('Ex',   data = (Ex))
+    h5f.close()
