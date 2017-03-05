@@ -1,62 +1,40 @@
 import arrayfire as af
 import numpy as np
+from wall_options.EM_periodic import periodic
 
-def generate_Poisson_matrix(no_of_elements_x, no_of_elements_y):
+# Successive over relaxation Poisson solver
 
-    Ax = af.data.constant(0, no_of_elements_y, no_of_elements_x, dtype=af.Dtype.f64)
-    Ay = af.data.constant(0, no_of_elements_y, no_of_elements_x, dtype=af.Dtype.f64)
+def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
 
-    Index_x = np.arange(1, no_of_elements_x - 1, 1)
-    Index_y = np.arange(1, no_of_elements_y - 1, 1)
+    x_points = (rho_with_ghost[0, :]).elements()
+    y_points = (rho_with_ghost[:, 0]).elements()
+    rho_with_ghost = periodic(rho_with_ghost, y_points, x_points, ghost_cells)
 
-    second_order_vector = af.Array([1, -2, 1])
-    second_order_vector_x = af.tile(af.reorder(second_order_vector, 1), no_of_elements_y, 1)
-    second_order_vector_y = af.tile(second_order_vector, 1, no_of_elements_x)
+    omega   = kwargs.get('omega', None)
+    epsilon = kwargs.get('epsilon', None)
 
-    Ax[0:1, 0] = af.Array([-2.0, 1])
-    Ax[-1, 0] = af.Array([1.0])
-    Ax[0:1, 0] = af.Array([-2.0, 1])
-    Ax[-1, 0] = af.Array([1.0])
+    if(omega == None):
+        omega = 2/(1+(np.pi/l))
 
-    Ay[0:1, 0] = af.Array([-2.0, 1])
-    Ay[-1, 0] = af.Array([1.0])
-    Ay[0:1, 0] = af.Array([-2.0, 1])
-    Ay[-1, 0] = af.Array([1.0])
+    if(epsilon == None):
+        epsilon = 1e-4
 
-    Ax[Index_y, Index_x : Index_x + 3] = second_order_vector_x
-    Ay[Index_x, Index_y : Index_y + 3] = second_order_vector_y
-
-    return Ax, Ay
+    X_physical_index = ghost_cells + af.data.range(y_points - 2 * ghost_cells, d1= x_points - 2 * ghost_cells, dim=1)
+    Y_physical_index = ghost_cells + af.data.range(y_points - 2 * ghost_cells, d1= x_points - 2 * ghost_cells, dim=0)
 
 
-
-def SOR(Ax, Ay, rho, epsilon):
-
-    V_k      = af.data.constant(0, (rho[:, 0]).elements(), (rho[0, :]).elements(), dtype=af.Dtype.f64)
-    V_k_plus = af.data.constant(0, (rho[:, 0]).elements(), (rho[0, :]).elements(), dtype=af.Dtype.f64)
-
-    l = (V[:, 0]).elements()
-
-    omega = 2/(1+(np.pi/l))
-
-    Lx = 0
-    Ux = 0
-    Dx = 0
-
-    Ly = 0
-    Uy = 0
-    Dy = 0
-
-    L_omega_x = -1 * af.inverse(Dx + omega * Lx) * (omega * Ux + (omega - 1) * Dx)
-    c_x = af.inverse(Dx + omega * Lx) * omega * rho
-
-    L_omega_y = -1 * af.inverse(Dy + omega * Ly) * (omega * Uy + (omega - 1) * Dy)
-    c_y = af.inverse(Dy + omega * Ly) * omega * rho
+    V_k      = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
+    V_k_plus = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
 
     while(af.sum(af.abs(V_k_plus - V_k))<epsilon):
+        V_k = V_k_plus.copy()
 
-        V_k = V_k_plus
 
-        V_k_plus =  (L_omega_x * V_k + c_x) + (L_omega_y * V_k + c_y)
+        V_k_plus[X_physical_index, Y_physical_index] =  (1-omega) * V_k[X_physical_index, Y_physical_index] \
+                                                        + (omega/(( 1/dx**2 )+(1/ dy**2))) \
+                                                        * (    (1/dx**2)*(V_k[X_physical_index, Y_physical_index + 1] + V_k[X_physical_index, Y_physical_index - 1]) \
+                                                            + (1/dy**2)*(V_k[X_physical_index + 1, Y_physical_index] + V_k[X_physical_index - 1, Y_physical_index]) \
+                                                            - (rho_with_ghost[X_physical_index, Y_physical_index]) \
+                                                          )
 
     return V_k_plus
