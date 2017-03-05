@@ -35,8 +35,8 @@ pl.rcParams['ytick.direction']  = 'in'
 
 ghost_cells = 1
 
-x_divisions_physical = 80
-y_divisions_physical = 80
+x_divisions_physical = 100
+y_divisions_physical = 100
 
 dx = 1/x_divisions_physical
 dy = 1/y_divisions_physical
@@ -59,7 +59,7 @@ h5f.close()
 x = np.linspace(0,1,x_points)
 y = np.linspace(0,1,y_points)
 
-pl.contourf(poisson_solution,100,cmap = 'jet')
+pl.contourf(x, y, poisson_solution,100,cmap = 'jet')
 pl.colorbar()
 pl.xlabel('$x$')
 pl.ylabel('$y$')
