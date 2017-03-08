@@ -367,3 +367,179 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   af.eval(Jx, Jy, Jz)
 
   return Jx, Jy, Jz
+
+
+
+def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,\
+                         x_grid, y_grid, ghost_cells, Lx, Ly, dt\
+                       ):
+
+  # print('vx is ', velocity_required_x)
+  # print('vy is ', velocity_required_y)
+
+
+
+  x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
+  y_current_zone = af.data.constant(0,y.elements(), dtype=af.Dtype.u32)
+
+  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+
+  dx = Lx/nx
+  dy = Ly/ny
+
+  # print('dx is ', dx)
+  # print('dy is ', dy)
+
+  x_1 = (x - (velocity_required_x * dt)).as_type(af.Dtype.f64)
+  x_2 = (x).as_type(af.Dtype.f64)
+
+  y_1 = (y - (velocity_required_y * dt)).as_type(af.Dtype.f64)
+  y_2 = (y).as_type(af.Dtype.f64)
+
+  # print('y_1 is ', y_1)
+  # print('y_2 is ', y_2)
+
+  i_1 = ( ((af.abs( x_1 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
+  j_1 = ( ((af.abs( y_1 - af.sum(y_grid[0])))/dy) - ghost_cells).as_type(af.Dtype.u32)
+
+
+  i_2 = ( ((af.abs( x_2 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
+  j_2 = ( ((af.abs( y_2 - af.sum(y_grid[0])))/dy) - ghost_cells).as_type(af.Dtype.u32)
+
+
+
+
+  # print('j_1 is ', j_1)
+  # print('j_2 is ', j_2)
+
+  i_dx = dx * af.join(1, i_1, i_2)
+  j_dy = dy * af.join(1, j_1, j_2)
+
+
+  # print('j_dy is ', j_dy)
+
+
+  i_dx_x_avg = af.join(1, af.max(i_dx,1), ((x_1+x_2)/2))
+  j_dy_y_avg = af.join(1, af.max(j_dy,1), ((y_1+y_2)/2))
+
+  # print('j_dy_y_avg is ', j_dy_y_avg)
+
+
+  x_r_term_1 = dx + af.min(i_dx, 1)
+  x_r_term_2 = af.max(i_dx_x_avg, 1)
+
+  y_r_term_1 = dy + af.min(j_dy, 1)
+  y_r_term_2 = af.max(j_dy_y_avg, 1)
+
+  # print('y_r_term_1 is ', y_r_term_1)
+  # print('y_r_term_2 is ', y_r_term_2)
+
+  x_r_combined_term = af.join(1, x_r_term_1, x_r_term_2)
+  y_r_combined_term = af.join(1, y_r_term_1, y_r_term_2)
+
+  x_r = af.min(x_r_combined_term, 1)
+  # print('y_r_combined_term is ', y_r_combined_term)
+  y_r = af.min(y_r_combined_term, 1)
+
+  # print('y_r is ', y_r)
+
+  F_x_1 = charge * (x_r - x_1)/dt
+  F_x_2 = charge * (x_2 - x_r)/dt
+
+  # print('y_r, y_2 and y_1 is ', y_r, y_2, y_1)
+
+  F_y_1 = charge * (y_r - y_1)/dt
+  F_y_2 = charge * (y_2 - y_r)/dt
+
+  # print('F_y_1', F_y_2)
+  # print('F_y_2 is ',F_y_2)
+
+  W_x_1 = (x_1 + x_r)/(2 * dx) - i_1
+  W_x_2 = (x_2 + x_r)/(2 * dx) - i_2
+
+  W_y_1 = (y_1 + y_r)/(2 * dy) - j_1
+  W_y_2 = (y_2 + y_r)/(2 * dy) - j_2
+
+  J_x_1_1 = (1/(dx * dy)) * (F_x_1 * (1 - W_y_1))
+  J_x_1_2 = (1/(dx * dy)) * (F_x_1 * (W_y_1))
+
+  J_x_2_1 = (1/(dx * dy)) * (F_x_2 * (1 - W_y_2))
+  J_x_2_2 = (1/(dx * dy)) * (F_x_2 * (W_y_2))
+
+  J_y_1_1 = (1/(dx * dy)) * (F_y_1 * (1 - W_x_1))
+  J_y_1_2 = (1/(dx * dy)) * (F_y_1 * (W_x_1))
+
+  J_y_2_1 = (1/(dx * dy)) * (F_y_2 * (1 - W_x_2))
+  J_y_2_2 = (1/(dx * dy)) * (F_y_2 * (W_x_2))
+
+
+
+  Jx_x_indices = af.join(0, i_1 + ghost_cells, i_1 + ghost_cells,\
+                            i_2 + ghost_cells, i_2 + ghost_cells\
+                        )
+  Jx_y_indices = af.join(0, j_1 + ghost_cells, (j_1 + 1 + ghost_cells),\
+                            j_2 + ghost_cells, (j_2 + 1 + ghost_cells)\
+                        )
+  Jx_values_at_these_indices = af.join(0, J_x_1_1, J_x_1_2, J_x_2_1, J_x_2_2)
+
+
+
+  Jy_x_indices = af.join(0, i_1 + ghost_cells, (i_1 + 1 + ghost_cells),\
+                            i_2 + ghost_cells, (i_2 + 1 + ghost_cells)\
+                        )
+  Jy_y_indices = af.join(0, j_1 + ghost_cells, j_1 + ghost_cells,\
+                            j_2 + ghost_cells, j_2 + ghost_cells\
+                        )
+  Jy_values_at_these_indices = af.join(0, J_y_1_1, J_y_1_2, J_y_2_1, J_y_2_2)
+
+
+
+  af.eval(Jx_x_indices, Jx_y_indices, Jy_x_indices, Jy_y_indices)
+  af.eval(Jx_values_at_these_indices, Jy_values_at_these_indices)
+
+  return Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
+         Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices
+
+
+
+def Umeda_2003(charge, no_of_particles, positions_x ,positions_y, positions_z, velocities_x, velocities_y, velocities_z, \
+                x_center_grid, y_center_grid, ghost_cells, Lx, Ly, dx, dy, dt\
+              ):
+
+  x_right_grid = x_center_grid + dx/2
+  y_top_grid = y_center_grid + dy/2
+
+  elements = x_center_grid.elements()*y_center_grid.elements()
+
+  Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
+  Jy_x_indices, Jy_y_indices,\
+   Jy_values_at_these_indices = Umeda_b1_deposition( charge,positions_x, positions_y, velocities_x,\
+                                                     velocities_y, x_right_grid, y_center_grid,\
+                                                     ghost_cells, Lx, Ly, dt\
+                                                   )
+
+
+  input_indices = (Jx_x_indices*(y_center_grid.elements()) + Jx_y_indices)
+
+  Jx, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jx_values_at_these_indices)
+  Jx = af.data.moddims(af.to_array(Jx), y_center_grid.elements(), x_center_grid.elements())
+
+  input_indices = (Jy_x_indices*(y_center_grid.elements()) + Jy_y_indices)
+  Jy, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jy_values_at_these_indices)
+  Jy = af.data.moddims(af.to_array(Jy), y_center_grid.elements(), x_center_grid.elements())
+
+  Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = current_b1_depositor( charge, positions_x, positions_y, velocities_z,\
+                                                                          x_center_grid, y_center_grid,\
+                                                                          ghost_cells, Lx, Ly\
+                                                                         )
+  # for i in range(no_of_particles):
+  #   Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
+
+  input_indices = (Jz_x_indices*(y_center_grid.elements()) + Jz_y_indices)
+  Jz, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jz_values_at_these_indices)
+  Jz = af.data.moddims(af.to_array(Jz),  y_center_grid.elements(), x_center_grid.elements())
+
+  af.eval(Jx, Jy, Jz)
+
+  return Jx, Jy, Jz
