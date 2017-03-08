@@ -48,7 +48,7 @@ rho = af.data.constant(0, x_points, y_points, dtype=af.Dtype.f64)
 x =  af.data.range(y_points , d1= x_points, dim=1)
 y =  af.data.range(y_points , d1= x_points , dim=0)
 # print(x)
-rho = 100 * af.arith.exp(-((x/100-0.5)**2 + (y/100-0.5) **2)/0.1)
+rho = 00 * af.arith.exp(-((x/100-0.5)**2 + (y/100-0.5) **2)/0.1)
 poisson_solution  = SOR(rho, ghost_cells, dx, dy)
 
 h5f = h5py.File('data_files/poisson_solution.h5', 'w')

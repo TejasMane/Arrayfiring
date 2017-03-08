@@ -6,12 +6,15 @@ user_defined_test = 1
 
 def run_test(x):
     if(x==1):
-        print('hello')
         test_1()
+
     if(x==2):
         test_2()
+
     if(x==3):
         test_3()
+
+
     return 1
 
 
@@ -47,9 +50,12 @@ def test_1():
                              Lx, Ly, dx, dy, dt\
                            )
 
-    print('Jx is ', Jx)
-    print('Jy is ', Jy)
-    print('Jz is ', Jz)
+    # print('Jx is ', Jx)
+    # print('Jy is ', Jy)
+    # print('Jz is ', Jz)
+
+
+
     return 1
 
 
