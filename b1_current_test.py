@@ -8,8 +8,8 @@ import time as timer
 
 from fields.current_depositor import current_b1_depositor
 charge = 1
-x1 = af.Array([0.2,0.6])
-y1 = af.Array([0.2,0.6])
+x1 = af.Array([0.2,0.7])
+y1 = af.Array([0.4,0.8])
 velocity_required = af.Array([1.0,1.0])
 x_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
 y_grid = af.Array([-1.0, 0.0, 1.0, 2.0])

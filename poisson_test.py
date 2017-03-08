@@ -45,7 +45,10 @@ x_points = x_divisions_physical + 2 * ghost_cells + 1
 y_points = y_divisions_physical + 2 * ghost_cells + 1
 
 rho = af.data.constant(0, x_points, y_points, dtype=af.Dtype.f64)
-
+x =  af.data.range(y_points , d1= x_points, dim=1)
+y =  af.data.range(y_points , d1= x_points , dim=0)
+# print(x)
+rho = 100 * af.arith.exp(-((x/100-0.5)**2 + (y/100-0.5) **2)/0.1)
 poisson_solution  = SOR(rho, ghost_cells, dx, dy)
 
 h5f = h5py.File('data_files/poisson_solution.h5', 'w')
@@ -55,10 +58,10 @@ h5f.close()
 h5f = h5py.File('data_files/poisson_solution.h5', 'r')
 poisson_solution = h5f['poisson_solution'][:]
 h5f.close()
-
+# poisson_solution = af.to_array(poisson_solution)
 x = np.linspace(0,1,x_points)
 y = np.linspace(0,1,y_points)
-
+# print(poisson_solution)
 pl.contourf(x, y, poisson_solution,100,cmap = 'jet')
 pl.colorbar()
 pl.xlabel('$x$')

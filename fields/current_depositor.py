@@ -152,19 +152,19 @@ def charge_b1_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
   dx_by_delta_x = (1/dx) * (x-x_grid[x_zone])
   dx_by_delta_x_complement = 1 - dx_by_delta_x
 
-  weight_d1 = dy_by_delta_y_complement * dx_by_delta_x_complement
-  weight_d2 = dy_by_delta_y * dx_by_delta_x_complement
-  weight_d3 = dy_by_delta_y * dx_by_delta_x
-  weight_d4 = dy_by_delta_y_complement * dx_by_delta_x
+  weight_corner1 = dy_by_delta_y_complement * dx_by_delta_x_complement
+  weight_corner2 = dy_by_delta_y * dx_by_delta_x_complement
+  weight_corner3 = dy_by_delta_y * dx_by_delta_x
+  weight_corner4 = dy_by_delta_y_complement * dx_by_delta_x
 
   charge_by_dxdy = ((charge/(dx*dy))).as_type(af.Dtype.f64)
 
-  d1_corners   = weight_d1 * charge_by_dxdy
-  d2_corners   = weight_d2 * charge_by_dxdy
-  d3_corners   = weight_d3 * charge_by_dxdy
-  d4_corners   = weight_d4 * charge_by_dxdy
+  corner1_charge   = weight_corner1 * charge_by_dxdy
+  corner2_charge   = weight_corner2 * charge_by_dxdy
+  corner3_charge   = weight_corner3 * charge_by_dxdy
+  corner4_charge   = weight_corner4 * charge_by_dxdy
 
-  all_corners_weighted_charge = af.join(0,d1_corners, d2_corners, d3_corners, d4_corners)
+  all_corners_weighted_charge = af.join(0,corner1_charge, corner2_charge, corner3_charge, corner4_charge)
 
   x_current_zone[0 * number_of_particles : 1 * number_of_particles] = x_zone
   x_current_zone[1 * number_of_particles : 2 * number_of_particles] = x_zone
@@ -257,19 +257,19 @@ def current_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
   dx_by_delta_x = (1/dx) * (x-x_grid[x_zone])
   dx_by_delta_x_complement = 1 - dx_by_delta_x
 
-  weight_d1 = dy_by_delta_y_complement * dx_by_delta_x_complement
-  weight_d2 = dy_by_delta_y * dx_by_delta_x_complement
-  weight_d3 = dy_by_delta_y * dx_by_delta_x
-  weight_d4 = dy_by_delta_y_complement * dx_by_delta_x
+  weight_corner1 = dy_by_delta_y_complement * dx_by_delta_x_complement
+  weight_corner2 = dy_by_delta_y * dx_by_delta_x_complement
+  weight_corner3 = dy_by_delta_y * dx_by_delta_x
+  weight_corner4 = dy_by_delta_y_complement * dx_by_delta_x
 
   current_by_dxdy = ((charge/(dx*dy))*velocity_required).as_type(af.Dtype.f64)
 
-  d1_corners   = weight_d1 * current_by_dxdy
-  d2_corners   = weight_d2 * current_by_dxdy
-  d3_corners   = weight_d3 * current_by_dxdy
-  d4_corners   = weight_d4 * current_by_dxdy
+  corner1_currents   = weight_corner1 * current_by_dxdy
+  corner2_currents   = weight_corner2 * current_by_dxdy
+  corner3_currents   = weight_corner3 * current_by_dxdy
+  corner4_currents   = weight_corner4 * current_by_dxdy
 
-  all_corners_weighted_current = af.join(0,d1_corners, d2_corners, d3_corners, d4_corners)
+  all_corners_weighted_current = af.join(0,corner1_currents, corner2_currents, corner3_currents, corner4_currents)
 
   x_current_zone[0 * number_of_particles : 1 * number_of_particles] = x_zone
   x_current_zone[1 * number_of_particles : 2 * number_of_particles] = x_zone

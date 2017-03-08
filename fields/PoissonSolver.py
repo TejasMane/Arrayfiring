@@ -2,13 +2,17 @@ import arrayfire as af
 import numpy as np
 # from wall_options.EM_periodic import periodic
 
+
+
+
 # Successive over relaxation Poisson solver
 
 def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
-    # print('rho_with_ghost is ', rho_with_ghost)
+    print('rho_with_ghost is ', rho_with_ghost)
     # print('ghost_cells is ', ghost_cells)
     # print('dx is ', dx)
     # print('dy is ', dy)
+
     print('Inside Poisson')
     x_points = (rho_with_ghost[0, :]).elements()
     y_points = (rho_with_ghost[:, 0]).elements()
@@ -20,27 +24,31 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
 
     l = x_points
     if(omega == None):
-        omega = 2/(1+(np.pi/l)) - 1
+        omega = 2/(1+(np.pi/l)) #- 1
 
     if(epsilon == None):
         epsilon = 1e-4
 
     if(max_iterations == None):
-        max_iterations = 1500
+        max_iterations = 150000
 
     # print('omega is ', omega)
 
     X_physical_index = ghost_cells + af.data.range(y_points - 2 * ghost_cells, d1= x_points - 2 * ghost_cells, dim=1)
     Y_physical_index = ghost_cells + af.data.range(y_points - 2 * ghost_cells, d1= x_points - 2 * ghost_cells, dim=0)
-
+    x1 = af.data.range(y_points, dim=0)
 
     V_k      = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
     V_k[ 0, :] = 1
-    V_k[-1, :] = 2
-    V_k_plus = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
-    V_k_plus[ 0, :] = 1
-    V_k_plus[-1, :] = 2
+    V_k[-1, :] = 2*af.arith.sin(2*np.pi*(x1/y_points))
+    V_k[ :, 0] = 0
+    V_k[:, -1] = 0
 
+    V_k_plus = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
+    V_k_plus[ 0, :] = 0#1
+    V_k_plus[-1, :] = 0#2*af.arith.sin(8*np.pi*x1)
+    V_k_plus[ :, 0] = 0
+    V_k_plus[:, -1] = 0
     # omega = 0.6
 
     V_k_plus =  (1-omega) * V_k \
@@ -51,7 +59,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
                                                       )
 
     V_k_plus[ 0, :] = 1
-    V_k_plus[-1, :] = 2
+    V_k_plus[-1, :] = 2*af.arith.sin(8*np.pi*(x1/y_points))
     V_k_plus[ :, 0] = 0
     V_k_plus[:, -1] = 0
     # print('Before loop Vk plus ', V_k_plus)
@@ -68,7 +76,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
                                                           )
 
         V_k_plus[ 0, :] = 1
-        V_k_plus[-1, :] = 2
+        V_k_plus[-1, :] = 2*af.arith.sin(8*np.pi*(x1/y_points))
         V_k_plus[ :, 0] = 0
         V_k_plus[:, -1] = 0
 
@@ -77,6 +85,8 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
             if(i%100==0):
                 print('Inside Poisson')
             if(af.max(af.abs(V_k_plus - V_k)) < epsilon):
+                print('iteration = ',i)
+                # print(V_k_plus)
                 return V_k_plus
         # print('Vk is ', V_k)
         # print('V_k update = ',V_k_plus)
