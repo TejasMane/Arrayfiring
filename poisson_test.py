@@ -35,8 +35,8 @@ pl.rcParams['ytick.direction']  = 'in'
 
 ghost_cells = 1
 
-x_divisions_physical = 100
-y_divisions_physical = 100
+x_divisions_physical = 50
+y_divisions_physical = 50
 
 dx = 1/x_divisions_physical
 dy = 1/y_divisions_physical
