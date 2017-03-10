@@ -22,7 +22,7 @@ import numpy as np
 """Charge Deposition for B0 splines (Have to vectorize)"""
 
 # charge b0 depositor
-def charge_b0_depositor(x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
+def charge_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   x_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
   y_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
@@ -65,12 +65,12 @@ def charge_b0_depositor(x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
   return x_charge_zone, y_charge_zone, charge_by_dxdy
 
 # b1 charge depositor
-def charge_b1_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
+def charge_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   number_of_particles = x.elements()
 
-  x_current_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
-  y_current_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
+  x_charge_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
+  y_charge_zone = af.data.constant(0, 4 * number_of_particles, dtype=af.Dtype.u32)
 
   nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
   ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
@@ -95,7 +95,7 @@ def charge_b1_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
   weight_corner3 = dy_by_delta_y * dx_by_delta_x
   weight_corner4 = dy_by_delta_y_complement * dx_by_delta_x
 
-  charge_by_dxdy = ((charge/(dx*dy))).as_type(af.Dtype.f64)
+  charge_by_dxdy = ((charge/(dx*dy)))
 
   corner1_charge   = weight_corner1 * charge_by_dxdy
   corner2_charge   = weight_corner2 * charge_by_dxdy
@@ -104,22 +104,44 @@ def charge_b1_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   all_corners_weighted_charge = af.join(0,corner1_charge, corner2_charge, corner3_charge, corner4_charge)
 
-  x_current_zone[0 * number_of_particles : 1 * number_of_particles] = x_zone
-  x_current_zone[1 * number_of_particles : 2 * number_of_particles] = x_zone
-  x_current_zone[2 * number_of_particles : 3 * number_of_particles] = x_zone_plus
-  x_current_zone[3 * number_of_particles : 4 * number_of_particles] = x_zone_plus
+  x_charge_zone[0 * number_of_particles : 1 * number_of_particles] = x_zone
+  x_charge_zone[1 * number_of_particles : 2 * number_of_particles] = x_zone
+  x_charge_zone[2 * number_of_particles : 3 * number_of_particles] = x_zone_plus
+  x_charge_zone[3 * number_of_particles : 4 * number_of_particles] = x_zone_plus
 
-  y_current_zone[0 * number_of_particles : 1 * number_of_particles] = y_zone
-  y_current_zone[1 * number_of_particles : 2 * number_of_particles] = y_zone_plus
-  y_current_zone[2 * number_of_particles : 3 * number_of_particles] = y_zone_plus
-  y_current_zone[3 * number_of_particles : 4 * number_of_particles] = y_zone
+  y_charge_zone[0 * number_of_particles : 1 * number_of_particles] = y_zone
+  y_charge_zone[1 * number_of_particles : 2 * number_of_particles] = y_zone_plus
+  y_charge_zone[2 * number_of_particles : 3 * number_of_particles] = y_zone_plus
+  y_charge_zone[3 * number_of_particles : 4 * number_of_particles] = y_zone
 
-  af.eval(x_current_zone, y_current_zone)
+  af.eval(x_charge_zone, y_charge_zone)
   af.eval(all_corners_weighted_charge)
 
-  return x_current_zone, y_current_zone, all_corners_weighted_charge
+  return x_charge_zone, y_charge_zone, all_corners_weighted_charge
 
+def direct_charge_deposition(charge, no_of_particles, positions_x ,positions_y,\
+                             positions_z, velocities_x, velocities_y, velocities_z, \
+                             x_center_grid, y_center_grid,shape_function, \
+                             ghost_cells, Lx, Ly, dx, dy\
+                            ):
 
+  elements = x_center_grid.elements()*y_center_grid.elements()
+
+  rho_x_indices, \
+  rho_y_indices, \
+  rho_values_at_these_indices = shape_function(charge,positions_x, positions_y,\
+                                               velocities_x, x_center_grid, y_center_grid,\
+                                               ghost_cells, Lx, Ly\
+                                              )
+
+  input_indices = (rho_x_indices*(y_center_grid.elements()) + rho_y_indices)
+
+  rho, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=rho_values_at_these_indices)
+  rho = af.data.moddims(af.to_array(rho), y_center_grid.elements(), x_center_grid.elements())
+
+  af.eval(rho)
+
+  return rho
 
 """Current Deposition for B0 splines (Vectorized)"""
 
@@ -225,23 +247,6 @@ def current_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
   return x_current_zone, y_current_zone, all_corners_weighted_current
 
 
-# # Test script for b1 depositor
-# from fields.current_depositor import current_b1_depositor
-# charge = 1
-# x1 = af.Array([0.2,0.6])
-# y1 = af.Array([0.2,0.6])
-# velocity_required = af.Array([1.0,1.0])
-# x_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
-# y_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
-# ghost_cells = 1
-# Lx = 1.0
-# Ly = 1.0
-#
-# print(current_b1_depositor(charge, x1, y1, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly))
-
-
-
-
 def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velocities_x, velocities_y, velocities_z, \
         x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy\
        ):
@@ -251,22 +256,11 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   y_top_grid = y_center_grid + dy/2
 
   elements = x_center_grid.elements()*y_center_grid.elements()
-  # Jx = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-  # Jy = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
-  # Jz = af.data.constant(0, x_center_grid.elements(), y_center_grid.elements(), dtype=af.Dtype.f64)
+
   Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
                                                                           x_right_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )
-
-  # print('Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices are ', Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices )
-  # print('Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices are ', Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices)
-  # Jx_test = af.data.constant(0, y_center_grid.elements(), x_center_grid.elements(), dtype=af.Dtype.f64)
-  #
-  #
-  # for i in range(no_of_particles):
-  #   Jx_test[af.sum(Jx_y_indices[i]), af.sum(Jx_x_indices[i])]  = Jx_test[af.sum(Jx_y_indices[i]), af.sum(Jx_x_indices[i])] +  Jx_values_at_these_indices[i]
-
 
 
   input_indices = (Jx_x_indices*(y_center_grid.elements()) + Jx_y_indices)
@@ -287,16 +281,10 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   Jy, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jy_values_at_these_indices)
   Jy = af.data.moddims(af.to_array(Jy), y_center_grid.elements(), x_center_grid.elements())
 
-
-  # for i in range(no_of_particles):
-  #   Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])] = Jy[af.sum(Jy_x_indices[i]), af.sum(Jy_y_indices[i])]+ Jy_values_at_these_indices[i]
-
   Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
                                                                           x_center_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )
-  # for i in range(no_of_particles):
-  #   Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
 
   input_indices = (Jz_x_indices*(y_center_grid.elements()) + Jz_y_indices)
   Jz, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jz_values_at_these_indices)
@@ -312,10 +300,6 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
                          x_grid, y_grid, ghost_cells, Lx, Ly, dt\
                        ):
 
-  # print('vx is ', velocity_required_x)
-  # print('vy is ', velocity_required_y)
-
-
 
   x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
   y_current_zone = af.data.constant(0,y.elements(), dtype=af.Dtype.u32)
@@ -326,17 +310,12 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   dx = Lx/nx
   dy = Ly/ny
 
-  # print('dx is ', dx)
-  # print('dy is ', dy)
-
   x_1 = (x - (velocity_required_x * dt)).as_type(af.Dtype.f64)
   x_2 = (x).as_type(af.Dtype.f64)
 
   y_1 = (y - (velocity_required_y * dt)).as_type(af.Dtype.f64)
   y_2 = (y).as_type(af.Dtype.f64)
 
-  # print('y_1 is ', y_1)
-  # print('y_2 is ', y_2)
 
   i_1 = ( ((af.abs( x_1 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
   j_1 = ( ((af.abs( y_1 - af.sum(y_grid[0])))/dy) - ghost_cells).as_type(af.Dtype.u32)
@@ -345,24 +324,11 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   i_2 = ( ((af.abs( x_2 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
   j_2 = ( ((af.abs( y_2 - af.sum(y_grid[0])))/dy) - ghost_cells).as_type(af.Dtype.u32)
 
-
-
-
-  # print('j_1 is ', j_1)
-  # print('j_2 is ', j_2)
-
   i_dx = dx * af.join(1, i_1, i_2)
   j_dy = dy * af.join(1, j_1, j_2)
 
-
-  # print('j_dy is ', j_dy)
-
-
   i_dx_x_avg = af.join(1, af.max(i_dx,1), ((x_1+x_2)/2))
   j_dy_y_avg = af.join(1, af.max(j_dy,1), ((y_1+y_2)/2))
-
-  # print('j_dy_y_avg is ', j_dy_y_avg)
-
 
   x_r_term_1 = dx + af.min(i_dx, 1)
   x_r_term_2 = af.max(i_dx_x_avg, 1)
@@ -370,28 +336,17 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   y_r_term_1 = dy + af.min(j_dy, 1)
   y_r_term_2 = af.max(j_dy_y_avg, 1)
 
-  # print('y_r_term_1 is ', y_r_term_1)
-  # print('y_r_term_2 is ', y_r_term_2)
-
   x_r_combined_term = af.join(1, x_r_term_1, x_r_term_2)
   y_r_combined_term = af.join(1, y_r_term_1, y_r_term_2)
 
   x_r = af.min(x_r_combined_term, 1)
-  # print('y_r_combined_term is ', y_r_combined_term)
   y_r = af.min(y_r_combined_term, 1)
-
-  # print('y_r is ', y_r)
 
   F_x_1 = charge * (x_r - x_1)/dt
   F_x_2 = charge * (x_2 - x_r)/dt
 
-  # print('y_r, y_2 and y_1 is ', y_r, y_2, y_1)
-
   F_y_1 = charge * (y_r - y_1)/dt
   F_y_2 = charge * (y_2 - y_r)/dt
-
-  # print('F_y_1', F_y_2)
-  # print('F_y_2 is ',F_y_2)
 
   W_x_1 = (x_1 + x_r)/(2 * dx) - i_1
   W_x_2 = (x_2 + x_r)/(2 * dx) - i_2
@@ -471,8 +426,6 @@ def Umeda_2003(charge, no_of_particles, positions_x ,positions_y, positions_z, v
                                                                           x_center_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )
-  # for i in range(no_of_particles):
-  #   Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] = Jz[af.sum(Jz_x_indices[i]), af.sum(Jz_y_indices[i])] + Jz_values_at_these_indices[i]
 
   input_indices = (Jz_x_indices*(y_center_grid.elements()) + Jz_y_indices)
   Jz, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jz_values_at_these_indices)
