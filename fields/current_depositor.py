@@ -22,7 +22,7 @@ import numpy as np
 """Charge Deposition for B0 splines (Have to vectorize)"""
 
 # charge b0 depositor
-def charge_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
+def charge_b0_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   x_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
   y_charge_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
@@ -65,7 +65,7 @@ def charge_b0_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_c
   return x_charge_zone, y_charge_zone, charge_by_dxdy
 
 # b1 charge depositor
-def charge_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_cells, Lx, Ly):
+def charge_b1_depositor(charge, x, y, x_grid, y_grid, ghost_cells, Lx, Ly):
 
   number_of_particles = x.elements()
 
@@ -120,7 +120,7 @@ def charge_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_c
   return x_charge_zone, y_charge_zone, all_corners_weighted_charge
 
 def direct_charge_deposition(charge, no_of_particles, positions_x ,positions_y,\
-                             positions_z, velocities_x, velocities_y, velocities_z, \
+                             positions_z, \
                              x_center_grid, y_center_grid,shape_function, \
                              ghost_cells, Lx, Ly, dx, dy\
                             ):
@@ -130,7 +130,7 @@ def direct_charge_deposition(charge, no_of_particles, positions_x ,positions_y,\
   rho_x_indices, \
   rho_y_indices, \
   rho_values_at_these_indices = shape_function(charge,positions_x, positions_y,\
-                                               velocities_x, x_center_grid, y_center_grid,\
+                                                x_center_grid, y_center_grid,\
                                                ghost_cells, Lx, Ly\
                                               )
 
@@ -386,15 +386,11 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
                         )
   Jy_values_at_these_indices = af.join(0, J_y_1_1, J_y_1_2, J_y_2_1, J_y_2_2)
 
-
-
   af.eval(Jx_x_indices, Jx_y_indices, Jy_x_indices, Jy_y_indices)
   af.eval(Jx_values_at_these_indices, Jy_values_at_these_indices)
 
   return Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
          Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices
-
-
 
 def Umeda_2003(charge, no_of_particles, positions_x ,positions_y, positions_z, velocities_x, velocities_y, velocities_z, \
                 x_center_grid, y_center_grid, ghost_cells, Lx, Ly, dx, dy, dt\

@@ -28,7 +28,7 @@ def test_1():
     positions_z = af.Array([0.5, 0.5])
 
     velocities_x = af.Array([1.0, 1.0])
-    velocities_y = af.Array([1.0, 1.0])
+    velocities_y = af.Array([0.0, 0.0])
     velocities_z = af.Array([0.0, 0.0])
 
     x_center_grid = af.Array([-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])

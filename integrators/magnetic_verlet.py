@@ -3,6 +3,11 @@ import arrayfire as af
 """
 This is the integrator that implements the Boris Algorithm.
 Add details here
+
+Input positions  :  x(n)
+Input Velocities :  v(n+0.5dt)
+
+
 """
 
 def integrator(mass_particle, charge, x_coords, y_coords, z_coords, vel_x, vel_y, vel_z, dt, Ex, Ey, Ez, Bx, By, Bz):
@@ -39,9 +44,9 @@ def integrator(mass_particle, charge, x_coords, y_coords, z_coords, vel_x, vel_y
 
   # Using v at (n+0.5) dt to push x at (n)dt
 
-  x_coords_new = x_coords + vel_x_new * dt
-  y_coords_new = y_coords + vel_y_new * dt
-  z_coords_new = z_coords + vel_z_new * dt
+  x_coords_new = x_coords + vel_x * dt
+  y_coords_new = y_coords + vel_y * dt
+  z_coords_new = z_coords + vel_z * dt
 
   af.eval(x_coords_new, y_coords_new, z_coords_new)
   af.eval(vel_x_new, vel_y_new, vel_z_new)

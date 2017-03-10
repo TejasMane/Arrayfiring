@@ -35,7 +35,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
         omega = 2/(1+(np.pi/l)) - 1
 
     if(epsilon == None):
-        epsilon = 1e-6
+        epsilon = 1e-8
 
     if(max_iterations == None):
         max_iterations = 3000000

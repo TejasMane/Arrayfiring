@@ -1,3 +1,9 @@
+"""
+x, E, rho at t = n * dt
+v, B, J at   t = n * dt + 0.5 * dt
+
+"""
+
 import numpy as np
 import h5py
 import params
@@ -106,7 +112,7 @@ vel_y_initial = h5f['vel_y'][:]
 vel_y_initial = af.to_array(vel_y_initial)
 
 time          = h5f['time'][:]
-print('time length', time.size)
+
 x_center      = h5f['x_center'][:]
 x_center      = af.to_array(x_center)
 
@@ -247,19 +253,21 @@ for time_index,t0 in enumerate(time):
     # print('x, y and v_x for the current deposition are ',x_initial-vel_x_initial*(dt/2), y_initial-vel_z_initial*(dt/2),vel_x_initial)
 
     if(time_index==0):
-
+      # x at t = 0 and v at t = 0.5dt
       Jx, Jy, Jz = Umeda_2003( charge, no_of_particles, x_initial, y_initial, \
                         z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
                         y_center, ghost_cells,length_box_x, length_box_y, dx, dy,dt \
                       )
 
       rho = direct_charge_deposition( charge, no_of_particles, x_initial, y_initial, \
-                        z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
+                        z_initial, x_center, \
                         y_center, charge_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy \
                       )
 
 
       V = SOR(rho, ghost_cells, dx, dy)
+
+      # Ex and Ey at t = 0
 
       Ex, Ey = compute_Electric_field(V, dx, dy, ghost_cells)
 
@@ -272,6 +280,7 @@ for time_index,t0 in enumerate(time):
       pl.ylabel('$y$')
       pl.show()
       pl.clf()
+
     #   pl.contourf(np.array(x_center), np.array(y_center), np.array(V), 100)
     #   pl.colorbar()
     #   pl.title('V')
@@ -306,22 +315,21 @@ for time_index,t0 in enumerate(time):
 
     else:
 
-      Jx, Jy, Jz = Umeda_2003( charge, no_of_particles, x_coords-vel_x*(dt/2), y_coords-vel_y*(dt/2), z_coords-vel_z*(dt/2),\
-                        vel_x, vel_y, vel_z, x_center, y_center, ghost_cells,\
-                        length_box_x, length_box_y, dx, dy, dt \
+      Jx, Jy, Jz = Umeda_2003( charge, no_of_particles, x_initial, y_initial, \
+                        z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
+                        y_center, ghost_cells,length_box_x, length_box_y, dx, dy,dt \
                       )
 
-
+    # Ex_updated at t = (time_index + 1) *dt  at Ex at (time_index) * dt
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
                                                                                    speed_of_light, length_box_x,\
                                                                                    length_box_y, ghost_cells, Jx, Jy,\
                                                                                    Jz, dt, no_of_particles\
                                                                                  )
 
-    ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
+    ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+1.5)dt from (E at ndt and B at (n+0.5dt) )
 
-    ## E at ndt and B averaged at ndt to push v at (n-0.5)dt
-
+    ## E at ndt and B averaged at (n + 1)dt to push v at (n+0.5)dt
 
     if(time_index==0):
 
@@ -338,6 +346,7 @@ for time_index,t0 in enumerate(time):
       fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial, y_initial, x_right, y_top)
 
     else:
+
       fracs_Ex_x, fracs_Ex_y = fraction_finder(x_coords, y_coords, x_right, y_center)
 
       fracs_Ey_x, fracs_Ey_y = fraction_finder(x_coords, y_coords, x_center, y_top)
@@ -352,24 +361,20 @@ for time_index,t0 in enumerate(time):
 
 
 
-    Ex_particle = af.signal.approx2(Ex, fracs_Ex_y, fracs_Ex_x)
+    Ex_particle = 0 * af.signal.approx2(Ex_updated, fracs_Ex_y, fracs_Ex_x)
 
-    Ey_particle = af.signal.approx2(Ey, fracs_Ey_y, fracs_Ey_x)
+    Ey_particle = 0 * af.signal.approx2(Ey_updated, fracs_Ey_y, fracs_Ey_x)
 
-    Ez_particle = af.signal.approx2(Ez, fracs_Ez_y, fracs_Ez_x)
+    Ez_particle = 0 * af.signal.approx2(Ez_updated, fracs_Ez_y, fracs_Ez_x)
 
-    Bx_particle = af.signal.approx2(Bx, fracs_Bx_y, fracs_Bx_x)
+    Bx_particle = 0 * af.signal.approx2((Bx + Bx_updated)/2, fracs_Bx_y, fracs_Bx_x)
 
-    By_particle = af.signal.approx2(By, fracs_By_y, fracs_By_x)
+    By_particle = 0 * af.signal.approx2((Bx + Bx_updated)/2, fracs_By_y, fracs_By_x)
 
-    Bz_particle = af.signal.approx2(Bz, fracs_Bz_y, fracs_Bz_x)
-
-
-
-
+    Bz_particle = 0 * af.signal.approx2((Bx + Bx_updated)/2, fracs_Bz_y, fracs_Bz_x)
 
     # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
-
+    # x_coords at (time_index + 1) * dt and x_initial at (time_index) * dt
     (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(mass_particle, charge, x_initial, y_initial, z_initial,\
                                                                      vel_x_initial, vel_y_initial, vel_z_initial, dt, \
                                                                      Ex_particle, Ey_particle, Ez_particle,\
@@ -380,10 +385,7 @@ for time_index,t0 in enumerate(time):
 
     Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
 
-
-    #
-    # if(time_index == 10):
-    #     diff_Ex =
+  # Periodic Boundary conditions for particles going outside the box
 
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
@@ -402,7 +404,7 @@ for time_index,t0 in enumerate(time):
   if(time_index%100==0):
 
     rho = direct_charge_deposition(charge, no_of_particles, x_coords, y_coords,\
-                        z_coords, vel_x_initial, vel_y_initial, vel_z_initial,\
+                        z_coords,\
                         x_center, y_center, charge_b1_depositor, ghost_cells,\
                         length_box_x, length_box_y, dx, dy \
                       )
@@ -415,7 +417,7 @@ for time_index,t0 in enumerate(time):
     pl.show()
     pl.clf()
 
-    pl.contourf(np.array(x_center[4:-4]), np.array(y_center[4:-4]), np.array(div_E_minus_rho[4:-4, 4:-4]), 100)
+    pl.contourf(np.array(x_center), np.array(y_center), np.array(div_E_minus_rho), 100)
     pl.colorbar()
     pl.xlabel('$x$')
     pl.ylabel('$y$')
