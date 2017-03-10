@@ -295,7 +295,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   return Jx, Jy, Jz
 
 
-
+# Umeda needs x(n), and v(n+0.5dt) for implementation
 def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,\
                          x_grid, y_grid, ghost_cells, Lx, Ly, dt\
                        ):
@@ -304,17 +304,17 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
   y_current_zone = af.data.constant(0,y.elements(), dtype=af.Dtype.u32)
 
-  nx = ((x_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
-  ny = ((y_grid.elements()) - 1 - 2 * ghost_cells )  # number of zones
+  nx = (x_grid.elements() - 1 - 2 * ghost_cells )  # number of zones
+  ny = (y_grid.elements() - 1 - 2 * ghost_cells )  # number of zones
 
   dx = Lx/nx
   dy = Ly/ny
 
-  x_1 = (x - (velocity_required_x * dt)).as_type(af.Dtype.f64)
-  x_2 = (x).as_type(af.Dtype.f64)
+  x_1 = (x).as_type(af.Dtype.f64)
+  x_2 = (x + (velocity_required_x * dt)).as_type(af.Dtype.f64)
 
-  y_1 = (y - (velocity_required_y * dt)).as_type(af.Dtype.f64)
-  y_2 = (y).as_type(af.Dtype.f64)
+  y_1 = (y).as_type(af.Dtype.f64)
+  y_2 = (y + (velocity_required_y * dt)).as_type(af.Dtype.f64)
 
 
   i_1 = ( ((af.abs( x_1 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
@@ -407,7 +407,7 @@ def Umeda_2003(charge, no_of_particles, positions_x ,positions_y, positions_z, v
 
   Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
   Jy_x_indices, Jy_y_indices,\
-   Jy_values_at_these_indices = Umeda_b1_deposition( charge,positions_x, positions_y, velocities_x,\
+  Jy_values_at_these_indices = Umeda_b1_deposition( charge, positions_x, positions_y, velocities_x,\
                                                      velocities_y, x_right_grid, y_center_grid,\
                                                      ghost_cells, Lx, Ly, dt\
                                                    )

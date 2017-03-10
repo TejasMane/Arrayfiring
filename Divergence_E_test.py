@@ -94,7 +94,7 @@ length_box_z     = params.length_box_z
 h5f           = h5py.File('data_files/initial_conditions/initial_data.h5', 'r')
 
 x_initial     = h5f['x_coords'][:]
-x_initial     = af.to_array(x_initial)
+x_initial     = (af.to_array(x_initial)).as_type(af.Dtype.f64)
 
 y_initial     = h5f['y_coords'][:]
 y_initial     = (af.to_array(y_initial)).as_type(af.Dtype.f64)
@@ -248,9 +248,9 @@ for time_index,t0 in enumerate(time):
 
     if(time_index==0):
 
-      Jx, Jy, Jz = dcd( charge, no_of_particles, x_initial-vel_x_initial*(dt/2), y_initial-vel_z_initial*(dt/2), \
-                        z_initial-vel_z_initial*(dt/2), vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
-                        y_center, current_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy \
+      Jx, Jy, Jz = Umeda_2003( charge, no_of_particles, x_initial, y_initial, \
+                        z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
+                        y_center, ghost_cells,length_box_x, length_box_y, dx, dy,dt \
                       )
 
       rho = direct_charge_deposition( charge, no_of_particles, x_initial, y_initial, \
@@ -272,27 +272,27 @@ for time_index,t0 in enumerate(time):
       pl.ylabel('$y$')
       pl.show()
       pl.clf()
-      pl.contourf(np.array(x_center), np.array(y_center), np.array(V), 100)
-      pl.colorbar()
-      pl.title('V')
-      pl.show()
-      pl.clf()
-
-      pl.contourf(np.array(x_center), np.array(y_center), np.array(Ex), 100)
-      pl.colorbar()
-      pl.title('Ex')
-      pl.xlabel('$x$')
-      pl.ylabel('$y$')
-      pl.show()
-      pl.clf()
-
-      pl.contourf(np.array(x_center), np.array(y_center), np.array(Ey), 100)
-      pl.colorbar()
-      pl.title('Ey')
-      pl.xlabel('$x$')
-      pl.ylabel('$y$')
-      pl.show()
-      pl.clf()
+    #   pl.contourf(np.array(x_center), np.array(y_center), np.array(V), 100)
+    #   pl.colorbar()
+    #   pl.title('V')
+    #   pl.show()
+    #   pl.clf()
+      #
+    #   pl.contourf(np.array(x_center), np.array(y_center), np.array(Ex), 100)
+    #   pl.colorbar()
+    #   pl.title('Ex')
+    #   pl.xlabel('$x$')
+    #   pl.ylabel('$y$')
+    #   pl.show()
+    #   pl.clf()
+      #
+    #   pl.contourf(np.array(x_center), np.array(y_center), np.array(Ey), 100)
+    #   pl.colorbar()
+    #   pl.title('Ey')
+    #   pl.xlabel('$x$')
+    #   pl.ylabel('$y$')
+    #   pl.show()
+    #   pl.clf()
     #   print(div_E_minus_rho.dims())
       pl.contourf(np.array(x_center[1:-1]), np.array(y_center[1:-1]), np.array(div_E_minus_rho[1:-1, 1:-1]), 100)
       pl.colorbar()
@@ -301,14 +301,14 @@ for time_index,t0 in enumerate(time):
       pl.title(r'$\nabla \cdot \textbf{E} - \rho$')
       pl.show()
       pl.clf()
-
-      input('check')
+      #
+    #   input('check')
 
     else:
 
-      Jx, Jy, Jz = dcd( charge, no_of_particles, x_coords-vel_x*(dt/2), y_coords-vel_y*(dt/2), z_coords-vel_z*(dt/2),\
-                        vel_x, vel_y, vel_z, x_center, y_center, current_b0_depositor, ghost_cells,\
-                        length_box_x, length_box_y, dx, dy \
+      Jx, Jy, Jz = Umeda_2003( charge, no_of_particles, x_coords-vel_x*(dt/2), y_coords-vel_y*(dt/2), z_coords-vel_z*(dt/2),\
+                        vel_x, vel_y, vel_z, x_center, y_center, ghost_cells,\
+                        length_box_x, length_box_y, dx, dy, dt \
                       )
 
 
@@ -399,9 +399,30 @@ for time_index,t0 in enumerate(time):
   old_vel_y = vel_y
   old_vel_z = vel_z
 
-
-
   if(time_index%100==0):
+
+    rho = direct_charge_deposition(charge, no_of_particles, x_coords, y_coords,\
+                        z_coords, vel_x_initial, vel_y_initial, vel_z_initial,\
+                        x_center, y_center, charge_b1_depositor, ghost_cells,\
+                        length_box_x, length_box_y, dx, dy \
+                      )
+
+    pl.contourf(np.array(x_center), np.array(y_center), np.array(rho), 100)
+    pl.colorbar()
+    pl.title(r'$\rho$'+ str(time_index))
+    pl.xlabel('$x$')
+    pl.ylabel('$y$')
+    pl.show()
+    pl.clf()
+
+    pl.contourf(np.array(x_center[4:-4]), np.array(y_center[4:-4]), np.array(div_E_minus_rho[4:-4, 4:-4]), 100)
+    pl.colorbar()
+    pl.xlabel('$x$')
+    pl.ylabel('$y$')
+    pl.title(r'$\nabla \cdot \textbf{E} - \rho$'+ str(time_index + 1))
+    pl.show()
+    pl.clf()
+    div_E_minus_rho = compute_divergence_E_minus_rho(Ex, Ey, (rho), dx, dy , ghost_cells)
     h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
     h5f.create_dataset('x_coords',   data = x_coords)
     h5f.create_dataset('Ex',   data = (Ex))

@@ -3,18 +3,18 @@ import numpy as np
 import h5py
 # from wall_options.EM_periodic import periodic
 
-def Dirichlet(V, ghost_cells):
+def Dirichlet(V, ghost_cells, x_points, y_points):
     # Top wall ghost
     V[ 0 : ghost_cells, :] = 0#V[-2 - ghost_cells, :]
 
     # Bottom wall ghost points
-    V[-ghost_cells:, :] = 0#V[ghost_cells + 1, :]
+    V[y_points - ghost_cells : y_points, :] = 0#V[ghost_cells + 1, :]
 
     # Left wall ghost
     V[ :, 0 : ghost_cells] = 0#V[:, -2 - ghost_cells]
 
     # Right wall ghost
-    V[:, -ghost_cells :] = 0#V[:, ghost_cells + 1]
+    V[:, x_points - ghost_cells : x_points] = 0#V[:, ghost_cells + 1]
 
     return V
 
@@ -35,7 +35,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
         omega = 2/(1+(np.pi/l)) - 1
 
     if(epsilon == None):
-        epsilon = 1e-14
+        epsilon = 1e-6
 
     if(max_iterations == None):
         max_iterations = 3000000
@@ -46,11 +46,11 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
 
     V_k      = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
     Error      = af.data.constant(0,int(max_iterations/100) , dtype=af.Dtype.f64)
-    V_k = Dirichlet(V_k, ghost_cells)
+    V_k = Dirichlet(V_k, ghost_cells, x_points, y_points)
 
     V_k_plus = af.data.constant(0, (rho_with_ghost[:, 0]).elements(), (rho_with_ghost[0, :]).elements(), dtype=af.Dtype.f64)
 
-    V_k_plus = Dirichlet(V_k_plus, ghost_cells)
+    V_k_plus = Dirichlet(V_k_plus, ghost_cells, x_points, y_points)
     # omega = 0.6
 
     V_k_plus =  (1-omega) * V_k \
@@ -60,7 +60,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
                                     + ((dx**2)*dy**2)*(rho_with_ghost) \
                                   )
 
-    V_k_plus = Dirichlet(V_k_plus, ghost_cells)
+    V_k_plus = Dirichlet(V_k_plus, ghost_cells, x_points, y_points)
 
     for i in range(max_iterations):
 
@@ -73,24 +73,24 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
                                         + ((dx**2)*dy**2)*(rho_with_ghost) \
                                       )
 
-        V_k_plus = Dirichlet(V_k_plus, ghost_cells)
+        V_k_plus = Dirichlet(V_k_plus, ghost_cells, x_points, y_points)
 
 
         if(i%10 == 0):
             if(i%100==0):
                 print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
-                Error[i/100] = af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points)
+                # Error[i/100] = af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points)
                 # print('Error',Error[:10])
-            if(af.max(af.abs(V_k_plus - V_k)) < epsilon):
+            if(af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points) < epsilon):
                 h5f = h5py.File('data_files/error.h5', 'w')
                 h5f.create_dataset('Error',   data = Error)
                 h5f.close()
                 return V_k_plus
 
 
-    h5f = h5py.File('data_files/error.h5', 'w')
-    h5f.create_dataset('Error',   data = Error)
-    h5f.close()
+    # h5f = h5py.File('data_files/error.h5', 'w')
+    # h5f.create_dataset('Error',   data = Error)
+    # h5f.close()
     af.eval(V_k_plus)
     return V_k_plus
 
@@ -99,12 +99,14 @@ def compute_Electric_field(V, dx, dy, ghost_cells):
     # Ex[i, j] = -\nabla\;V = -(V[i,j + 1] - V[i,j])/dx
     # Ey[i,j] = -\nabla\;V = - (V[i + 1, j] - V[i, j])/dy
     # Row column representation
+    x_points = (V[0, :]).elements()
+    y_points = (V[:, 0]).elements()
 
     Ex = -(af.data.shift(V, 0, 1) - af.data.shift(V, 0, 0))/dx
     Ey = -(af.data.shift(V, 1, 0) - af.data.shift(V, 0, 0))/dy
 
-    # Ex = Dirichlet(Ex, ghost_cells)
-    # Ey = Dirichlet(Ey, ghost_cells)
+    # Ex = Dirichlet(Ex, ghost_cells, x_points, y_points)
+    # Ey = Dirichlet(Ey, ghost_cells, x_points, y_points)
 
     return Ex, Ey
 
@@ -117,7 +119,7 @@ def compute_divergence_E_minus_rho(Ex, Ey, rho, dx, dy, ghost_cells):
                       + (af.data.shift(Ey, 0, 0) - af.data.shift(Ey, -1, 0))/dy\
                       - (rho)
 
-    # div_E_minus_rho = Dirichlet(div_E_minus_rho, ghost_cells)
+    # div_E_minus_rho = Dirichlet(div_E_minus_rho, ghost_cells, x_points, y_points)
 
 
     return div_E_minus_rho

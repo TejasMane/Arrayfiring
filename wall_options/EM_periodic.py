@@ -72,10 +72,10 @@ length_box_z     = params.length_box_z
 
 def periodic(field, x_points, y_points, ghost_cells):
 
-  field[ 0 : ghost_cells, :] = field[y_points -1 - 2 * ghost_cells: y_points -1 - 1 * ghost_cells, :]
-  field[ :, 0 : ghost_cells] = field[:, x_points -1 - 2 * ghost_cells: x_points -1 - 1 * ghost_cells]
-  field[-ghost_cells:, :]    = field[ghost_cells + 1: 2 * ghost_cells + 1, :]
-  field[:, -ghost_cells :]   = field[: , ghost_cells + 1: 2 * ghost_cells + 1]
+  # field[ 0 : ghost_cells, :]                    = 0#field[y_points -1 - 2 * ghost_cells: y_points -1 - 1 * ghost_cells, :]
+  # field[ :, 0 : ghost_cells]                    = 0#field[:, x_points -1 - 2 * ghost_cells: x_points -1 - 1 * ghost_cells]
+  # field[y_points - ghost_cells : y_points, :]   = 0#field[ghost_cells + 1: 2 * ghost_cells + 1, :]
+  # field[:, x_points - ghost_cells : x_points]   = 0#field[: , ghost_cells + 1: 2 * ghost_cells + 1]
 
   af.eval(field)
   return field

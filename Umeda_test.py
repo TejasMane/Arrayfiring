@@ -23,21 +23,21 @@ def test_1():
 
     no_of_particles = 2
 
-    positions_x = af.Array([0.6, 0.6])
-    positions_y = af.Array([0.6, 0.6])
+    positions_x = af.Array([0.5, 0.5])
+    positions_y = af.Array([0.5, 0.5])
     positions_z = af.Array([0.5, 0.5])
 
     velocities_x = af.Array([1.0, 1.0])
     velocities_y = af.Array([1.0, 1.0])
     velocities_z = af.Array([0.0, 0.0])
 
-    x_center_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
-    y_center_grid = af.Array([-1.0, 0.0, 1.0, 2.0])
+    x_center_grid = af.Array([-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+    y_center_grid = af.Array([-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
 
     dt = 0.2
 
-    dx = 1
-    dy = 1
+    dx = 0.2
+    dy = 0.2
 
     ghost_cells = 1
 
@@ -50,9 +50,9 @@ def test_1():
                              Lx, Ly, dx, dy, dt\
                            )
 
-    # print('Jx is ', Jx)
-    # print('Jy is ', Jy)
-    # print('Jz is ', Jz)
+    print('Jx is ', Jx*dx*dy)
+    print('Jy is ', Jy*dx*dy)
+    print('Jz is ', Jz*dx*dy)
 
 
 

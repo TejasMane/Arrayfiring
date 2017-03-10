@@ -264,7 +264,7 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt,no_of_particl
 
   Ez_local +=   dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, By_local)) \
               - dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bx_local)) \
-              - dt*(Jz/no_of_particles)
+              - dt*(Jz)
 
   # dEz/dt = dBy/dx - dBx/dy
 
@@ -342,11 +342,11 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_partic
 
   """  Updating the Electric fields using the current too   """
 
-  Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - (Jx/no_of_particles) * dt
+  Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - (Jx) * dt
 
   # dEx/dt = + dBz/dy
 
-  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - (Jy/no_of_particles) * dt
+  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - (Jy) * dt
 
   # dEy/dt = - dBz/dx
 
