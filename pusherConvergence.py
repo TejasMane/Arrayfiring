@@ -82,12 +82,12 @@ def error(a,b):
     """ Setting the offset spatial grids """
 
 
-    x_right = np.linspace(-ghost_cells * dx / 2, Lx + (2 * ghost_cells + 1) * dx / 2, Nx + 1 + 2 * ghost_cells,\
+    x_right = np.linspace(-ghost_cells * dx + dx/ 2, Lx + (2 * ghost_cells + 1) * dx / 2, Nx + 1 + 2 * ghost_cells,\
                             endpoint=True\
                          )
 
 
-    y_top = np.linspace(-ghost_cells * dy / 2, Ly + (2 * ghost_cells + 1) * dy / 2, Ny + 1 + 2 * ghost_cells,\
+    y_top = np.linspace(-ghost_cells * dy + dy/ 2, Ly + (2 * ghost_cells + 1) * dy / 2, Ny + 1 + 2 * ghost_cells,\
                           endpoint=True\
                        )
 

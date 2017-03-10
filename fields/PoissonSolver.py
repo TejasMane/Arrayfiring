@@ -5,16 +5,16 @@ import h5py
 
 def Dirichlet(V, ghost_cells):
     # Top wall ghost
-    V[ 0, :] = 0#V[-2 - ghost_cells, :]
+    V[ 0 : ghost_cells, :] = 0#V[-2 - ghost_cells, :]
 
     # Bottom wall ghost points
-    V[-1, :] = 0#V[ghost_cells + 1, :]
+    V[-ghost_cells:, :] = 0#V[ghost_cells + 1, :]
 
     # Left wall ghost
-    V[ :, 0] = 0#V[:, -2 - ghost_cells]
+    V[ :, 0 : ghost_cells] = 0#V[:, -2 - ghost_cells]
 
     # Right wall ghost
-    V[:, -1] = 0#V[:, ghost_cells + 1]
+    V[:, -ghost_cells :] = 0#V[:, ghost_cells + 1]
 
     return V
 

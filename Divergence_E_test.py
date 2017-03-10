@@ -42,22 +42,6 @@ start = timer.time()
 
 no_of_particles      = params.no_of_particles
 choice_integrator    = params.choice_integrator
-collision_operator   = params.collision_operator
-
-plot_spatial_temperature_profile = params.plot_spatial_temperature_profile
-
-if(plot_spatial_temperature_profile == "true"):
-  x_zones_temperature = params.x_zones_temperature
-  y_zones_temperature = params.y_zones_temperature
-
-elif(collision_operator == "potential-based"):
-  potential_steepness     = params.potential_steepness
-  potential_amplitude     = params.potential_amplitude
-  order_finite_difference = params.order_finite_difference
-
-elif(collision_operator == "montecarlo"):
-  x_zones_montecarlo = params.x_zones_montecarlo
-  y_zones_montecarlo = params.y_zones_montecarlo
 
 mass_particle      = params.mass_particle
 boltzmann_constant = params.boltzmann_constant
@@ -146,22 +130,6 @@ h5f.close()
 # Considering a non-adaptive time-stepping, the time-step size for the entire simulation would be
 dt = time[1] - time[0]
 
-"""Declaring data variables which shall be used in post-processing"""
-
-# These variables will be written to file at the end of every 100 time-steps
-# This frequency of writing to the disc may be changed below
-
-#momentum_x     = np.zeros(time.size)
-#momentum_y     = np.zeros(time.size)
-#momentum_z     = np.zeros(time.size)
-#kinetic_energy = np.zeros(time.size)
-#pressure       = np.zeros(time.size)
-#heatflux_x     = np.zeros(time.size)
-#heatflux_y     = np.zeros(time.size)
-#heatflux_z     = np.zeros(time.size)
-
-if(collision_operator == "potential-based"):
-  potential_energy = np.zeros(time.size)
 
 """Choice for integrators"""
 
@@ -191,20 +159,6 @@ elif(wall_condition_z == "hardwall"):
 elif(wall_condition_z == "periodic"):
   from wall_options.periodic import wall_z
 
-"""Collision Options"""
-
-if(collision_operator == "montecarlo"):
-  from collision_operators.monte_carlo import collision_operator
-
-# We shall define a collision operator for the potential based model and collisionless models as well,
-# Although integrator takes care of the scattering itself. The operator shall return the values as is
-# This is to avoid condition checking inside the time-loop
-
-if(collision_operator == "potential-based"):
-  from collision_operators.potential import collision_operator
-
-if(collision_operator == "collisionless"):
-  from collision_operators.collisionless import collision_operator
 
 if(fields_enabled == "true"):
   from fields.fdtd import fdtd
@@ -304,22 +258,12 @@ for time_index,t0 in enumerate(time):
                         y_center, charge_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy \
                       )
 
-    #   print()
 
-    #   print('rho is ', (rho))
-    #   rho = rho/no_of_particles
-    #   print('x_center elements ',x_center.dims())
-    #   print('Rho elements ',rho.dims())
       V = SOR(rho, ghost_cells, dx, dy)
-    #   input('check')
-    #   print('V is ',V)
-    #   input('V check')
-      Ex, Ey = compute_Electric_field(V, dx, dy, ghost_cells)
-    #   print('Ex is', Ex)
-    #   input('Ex check')
-      div_E_minus_rho = compute_divergence_E_minus_rho(Ex, Ey, (rho), dx, dy , ghost_cells)
 
-    #   print('div_E_minus_rho is ',(div_E_minus_rho))
+      Ex, Ey = compute_Electric_field(V, dx, dy, ghost_cells)
+
+      div_E_minus_rho = compute_divergence_E_minus_rho(Ex, Ey, (rho), dx, dy , ghost_cells)
 
       pl.contourf(np.array(x_center), np.array(y_center), np.array(rho), 100)
       pl.colorbar()
@@ -333,26 +277,6 @@ for time_index,t0 in enumerate(time):
       pl.title('V')
       pl.show()
       pl.clf()
-    #   print('Ex last  point', Ex[-1, :])
-    #   print('Ex 2nd last point', Ex[-2, :])
-    #   print('Ex 3rd last point', Ex[-3, :])
-    #   print('Ex 4th last point', Ex[-4, :])
-      #
-    #   pl.contourf(np.array(x_center[1:-1]), np.array(y_center[1:-1]), np.array(Ex[1:-1,1:-1]), 100)
-    #   pl.colorbar()
-    #   pl.title('Ex physical all')
-    #   pl.xlabel('$x$')
-    #   pl.ylabel('$y$')
-    #   pl.show()
-    #   pl.clf()
-      #
-    #   pl.contourf(np.array(x_center[2:-2]), np.array(y_center[2:-2]), np.array(Ex[2:-2,2:-2]), 100)
-    #   pl.colorbar()
-    #   pl.title('Ex')
-    #   pl.xlabel('$x$')
-    #   pl.ylabel('$y$')
-    #   pl.show()
-    #   pl.clf()
 
       pl.contourf(np.array(x_center), np.array(y_center), np.array(Ex), 100)
       pl.colorbar()

@@ -68,7 +68,7 @@ def interpolation_error_convergence(a, b):
         length_box_y = 1
 
         speed_of_light = 1
-        ghost_cells = 1
+        ghost_cells = 2
 
         dx = np.float(length_box_x / (Nx))
         dy = np.float(length_box_y / (Ny))
@@ -82,12 +82,12 @@ def interpolation_error_convergence(a, b):
         y_center = np.linspace(-ghost_cells * dy, length_box_y + ghost_cells * dy, Ny + 1 + 2 * ghost_cells,
                                endpoint=True)
 
-        x_right = np.linspace(-ghost_cells * dx / 2, length_box_x + (2 * ghost_cells + 1) * dx / 2,
+        x_right = np.linspace(-ghost_cells * dx + dx/2, length_box_x + (2 * ghost_cells + 1) * dx / 2,
                               Nx + 1 + 2 * ghost_cells, \
                               endpoint=True \
                               )
 
-        y_top = np.linspace(-ghost_cells * dy / 2, length_box_y + (2 * ghost_cells + 1) * dy / 2,
+        y_top = np.linspace(-ghost_cells * dy + dy/ 2, length_box_y + (2 * ghost_cells + 1) * dy / 2,
                             Ny + 1 + 2 * ghost_cells, \
                             endpoint=True \
                             )
@@ -107,7 +107,10 @@ def interpolation_error_convergence(a, b):
                                     x_center[ghost_cells:-ghost_cells].elements())
 
         Y_top_physical = af.tile(y_top[ghost_cells:-ghost_cells], 1, x_center[ghost_cells:-ghost_cells].elements())
-
+        # print('dx is ', dx)
+        # print('x_center', x_center)
+        # print('x_right', x_right)
+        # print('X_center_physical is ', X_center_physical)
         """ Initializing the field variables """
 
         Ez = af.data.constant(0, x_center.elements(), y_center.elements(), dtype=af.Dtype.f64)
