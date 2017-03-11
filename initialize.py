@@ -83,18 +83,18 @@ change may also be made at params.py
 # Might not initialize correctly for some divisions
 
 
-# x_divisions_perturbed = 100
-# length_of_box_x         = right_boundary - left_boundary
-# initial_position_x=np.zeros(no_of_particles)
-# last=0
-# next=0
-# for i in range(x_divisions_perturbed):
-#    next=last+(no_of_particles*Amplitude_perturbed*np.sin(2*i*np.pi/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
-#    initial_position_x[int(round(last)):(int(round(next))-1)] = length_of_box_x*(i+1)/(x_divisions_perturbed+1)
-#    last=next
-initial_position_x = 0.25 + left_boundary   + 0.5 * length_box_x * af.randu(no_of_particles)
-initial_position_y = 0.25 + bottom_boundary + 0.5 * length_box_y * af.randu(no_of_particles)
-initial_position_z = 0.25 + back_boundary   + 0.5 * length_box_z * af.randu(no_of_particles)
+x_divisions_perturbed = 100
+length_of_box_x         = right_boundary - left_boundary
+initial_position_x=np.zeros(no_of_particles)
+last=0
+next=0
+for i in range(x_divisions_perturbed):
+   next=last+(no_of_particles*Amplitude_perturbed*np.sin(2*i*np.pi/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
+   initial_position_x[int(round(last)):(int(round(next))-1)] = length_of_box_x*(i+1)/(x_divisions_perturbed+1)
+   last=next
+# initial_position_x = 0.25 + left_boundary   + 0.5 * length_box_x * af.randu(no_of_particles)
+initial_position_y =  bottom_boundary + 1 * length_box_y * af.randu(no_of_particles)
+initial_position_z =  back_boundary   + 1 * length_box_z * af.randu(no_of_particles)
 
 
 """ Initializing velocities to the particles """

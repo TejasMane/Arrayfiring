@@ -248,16 +248,21 @@ def current_b1_depositor(charge, x, y, velocity_required, x_grid, y_grid, ghost_
 
 
 def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velocities_x, velocities_y, velocities_z, \
-        x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy\
+        x_center_grid, y_center_grid,shape_function, ghost_cells, Lx, Ly, dx, dy, dt\
        ):
-
+  # Positions x(n), v(n + 0.5dt)
   # print('charge is ', charge)
   x_right_grid = x_center_grid + dx/2
   y_top_grid = y_center_grid + dy/2
 
+  positions_x_dcd = positions_x + (velocities_x * dt/2)
+  positions_y_dcd = positions_y + (velocities_y * dt/2)
+  positions_z_dcd = positions_z + (velocities_z * dt/2)
+
+
   elements = x_center_grid.elements()*y_center_grid.elements()
 
-  Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_x,\
+  Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices = shape_function( charge,positions_x_dcd, positions_y_dcd, velocities_x,\
                                                                           x_right_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )
@@ -271,7 +276,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
 
 
 
-  Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x, positions_y, velocities_y,\
+  Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices = shape_function( charge,positions_x_dcd, positions_y_dcd, velocities_y,\
                                                                           x_center_grid, y_top_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )
@@ -281,7 +286,7 @@ def dcd(charge, no_of_particles, positions_x ,positions_y, positions_z, velociti
   Jy, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jy_values_at_these_indices)
   Jy = af.data.moddims(af.to_array(Jy), y_center_grid.elements(), x_center_grid.elements())
 
-  Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x, positions_y, velocities_z,\
+  Jz_x_indices, Jz_y_indices, Jz_values_at_these_indices = shape_function( charge, positions_x_dcd, positions_y_dcd, velocities_z,\
                                                                           x_center_grid, y_center_grid,\
                                                                           ghost_cells, Lx, Ly\
                                                                          )

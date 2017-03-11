@@ -6,7 +6,7 @@ Add details here
 
 Input positions  :  x(n)
 Input Velocities :  v(n+0.5dt)
-
+Input fields : E(x((n + 1)*dt)), B(x((n+1)*dt))
 
 """
 

@@ -2,13 +2,14 @@ import numpy as np
 import h5py
 import params
 import arrayfire as af
-import time as timer
 
 print(af.device.device_info())
 
-start = timer.time()
+"""
+x, E, rho at t = (n) * dt
+v, B, J   at t = (n + 0.5) * dt
+"""
 
-#print('Start time',start)
 """Here we shall re-assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
@@ -162,25 +163,11 @@ elif(wall_condition_z == "hardwall"):
 elif(wall_condition_z == "periodic"):
   from wall_options.periodic import wall_z
 
-"""Collision Options"""
-
-if(collision_operator == "montecarlo"):
-  from collision_operators.monte_carlo import collision_operator
-
-# We shall define a collision operator for the potential based model and collisionless models as well,
-# Although integrator takes care of the scattering itself. The operator shall return the values as is
-# This is to avoid condition checking inside the time-loop
-
-if(collision_operator == "potential-based"):
-  from collision_operators.potential import collision_operator
-
-if(collision_operator == "collisionless"):
-  from collision_operators.collisionless import collision_operator
 
 if(fields_enabled == "true"):
   from fields.fdtd import fdtd
   from integrators.magnetic_verlet import integrator
-  from fields.current_depositor import dcd, current_b0_depositor, charge_b0_depositor
+  from fields.current_depositor import dcd, current_b1_depositor, charge_b1_depositor
   Ez = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
   Bx = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
   By = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
@@ -213,19 +200,15 @@ if(fields_enabled == "true"):
 
   dx = length_box_x/x_zones_field
   dy = length_box_y/y_zones_field
-
-  # Ey[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*(-X_right_physical))
-  # Bz[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = 0.2*af.arith.sin(2*np.pi*((dx/2)-X_right_physical))
-  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * Amplitude_perturbed * (1/k_fourier) * \
+  # At time t = 0 * dt
+  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * no_of_particles * Amplitude_perturbed * (1/k_fourier) * \
                                                            af.arith.sin(k_fourier*(X_right_physical))
-  print('Ex initialized is ', Ex)
+  # print('Ex initialized is ', Ex)
 # Now we shall proceed to evolve the system with time:
 from fields.interpolator import zone_finder, fraction_finder
 
 for time_index,t0 in enumerate(time):
 
-  loop_entering = timer.time()
-  #print('Entering time index loop',loop_entering-start)
   if(time_index%100==0):
     print("Computing for Time Index = ", time_index)
     print() # This is to print a blank line
@@ -233,253 +216,91 @@ for time_index,t0 in enumerate(time):
   if(time_index == time.size-1):
     break
 
-  if(time_index!=0):
-    x_initial     = old_x
-    y_initial     = old_y
-    z_initial     = old_z
-    vel_x_initial = old_vel_x
-    vel_y_initial = old_vel_y
-    vel_z_initial = old_vel_z
+  Jx[:, :], Jy[:, :], Jz[:, :] = 0, 0, 0
 
-  """
-  We shall use the integrator that accounts only for collisions in the case of potential-based model
-  and acts as a pure particle pusher for all other cases, in the absence of electric and magnetic fields
-  With the presence of fields, we need to integrate over the motion of the particle known as the Boris
-  Algorithm to avoid rise in the energy of the system.
-  Future revisions shall try to include these features into a single integrator option
-  """
+  # Getting Jx, Jy, Jz at t = (n + 0.5) * dt from x(n * dt) and v at (n + 0.5) * dt
+  Jx, Jy, Jz = dcd( charge, no_of_particles, x_initial, y_initial, \
+                  z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
+                  y_center, current_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy, dt \
+                )
 
-  if(fields_enabled == "false"):
+  # Getting E((n + 1) * dt) and B((n + 1 + 0.5) * dt) from E(n * dt) and B((n + 0.5) * dt)
+  Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
+                                                                                 speed_of_light, length_box_x,\
+                                                                                 length_box_y, ghost_cells, Jx, Jy,\
+                                                                                 Jz, dt, no_of_particles\
+                                                                               )
 
-    (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(x_initial,     y_initial,     z_initial,\
-                                                                     vel_x_initial, vel_y_initial, vel_z_initial, dt\
-                                                                    )
+  # finding fractional positions for interpolating fields for x((n + 1) * dt)
 
-  elif(fields_enabled == "true"):
+  fracs_Ex_x, fracs_Ex_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                           y_initial + vel_y_initial * dt, \
+                                           x_right, y_center)
 
-    Jx[:, :], Jy[:, :], Jz[:, :] = 0, 0, 0
-    # print('Before  current deposition, Jx = ', Jx)
-    # print('x, y and v_x for the current deposition are ',x_initial-vel_x_initial*(dt/2), y_initial-vel_z_initial*(dt/2),vel_x_initial)
+  fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                           y_initial + vel_y_initial * dt, \
+                                           x_right, y_center)
 
-    if(time_index==0):
-      Jx, Jy, Jz = dcd( charge, no_of_particles, x_initial-vel_x_initial*(dt/2), y_initial-vel_z_initial*(dt/2), \
-                        z_initial-vel_z_initial*(dt/2), vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
-                        y_center, current_b0_depositor, ghost_cells,length_box_x, length_box_y, dx, dy \
-                      )
-    else:
+  fracs_Ez_x, fracs_Ez_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                           y_initial + vel_y_initial * dt, \
+                                           x_right, y_center)
 
-      Jx, Jy, Jz = dcd( charge, no_of_particles, x_coords-vel_x*(dt/2), y_coords-vel_y*(dt/2), z_coords-vel_z*(dt/2),\
-                        vel_x, vel_y, vel_z, x_center, y_center, current_b0_depositor, ghost_cells,\
-                        length_box_x, length_box_y, dx, dy \
-                      )
+  fracs_Bx_x, fracs_Bx_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                           y_initial + vel_y_initial * dt, \
+                                           x_right, y_center)
 
-    # print('After current deposition, Jx = ', Jx)
-    # print(' Ex is ',((Ex)))
-    # input('Whats up')
-    # Jx = Jx/no_of_particles
-    # Jy = Jy/no_of_particles
-    # jz = Jz/no_of_particles
+  fracs_By_x, fracs_By_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                           y_initial + vel_y_initial * dt, \
+                                           x_right, y_center)
 
-    # print('Before FDTD Ex max is ',af.max(Ex))
-    # print('Before FDTD Ex min is ',af.min(Ex))
-    # print('Jx max for FDTD is ', af.max(Jx))
-    # print('Jx min for FDTD is ', af.min(Jx))
-    Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
-                                                                                   speed_of_light, length_box_x,\
-                                                                                   length_box_y, ghost_cells, Jx, Jy,\
-                                                                                   Jz, dt, no_of_particles\
-                                                                                 )
-    # print('After FDTD Ex max is ',af.max(Ex_updated))
-    # print('After FDTD Ex min is ',af.min(Ex_updated))
-    ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+0.5)dt from (E at ndt and B at (n-0.5)dt)
+  fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                           y_initial + vel_y_initial * dt, \
+                                           x_right, y_center)
 
-    ## E at ndt and B averaged at ndt to push v at (n-0.5)dt
+  # Find E(x[(n + 1) * dt]) and B(x[(n + 1) * dt])
 
+  Ex_particle = af.signal.approx2(Ex_updated, fracs_Ex_y, fracs_Ex_x)
 
-    if(time_index==0):
+  Ey_particle = af.signal.approx2(Ey_updated, fracs_Ey_y, fracs_Ey_x)
 
-      fracs_Ex_x, fracs_Ex_y = fraction_finder(x_initial, y_initial, x_right, y_center)
+  Ez_particle = af.signal.approx2(Ez_updated, fracs_Ez_y, fracs_Ez_x)
 
-      fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial, y_initial, x_center, y_top)
+  Bx_particle = af.signal.approx2((Bx + Bx_updated)/2, fracs_Bx_y, fracs_Bx_x)
 
-      fracs_Ez_x, fracs_Ez_y = fraction_finder(x_initial, y_initial, x_center, y_center)
+  By_particle = af.signal.approx2((By + By_updated)/2, fracs_By_y, fracs_By_x)
 
-      fracs_Bx_x, fracs_Bx_y = fraction_finder(x_initial, y_initial, x_center, y_top)
-
-      fracs_By_x, fracs_By_y = fraction_finder(x_initial, y_initial, x_right, y_center)
-
-      fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial, y_initial, x_right, y_top)
-
-    else:
-      fracs_Ex_x, fracs_Ex_y = fraction_finder(x_coords, y_coords, x_right, y_center)
-
-      fracs_Ey_x, fracs_Ey_y = fraction_finder(x_coords, y_coords, x_center, y_top)
-
-      fracs_Ez_x, fracs_Ez_y = fraction_finder(x_coords, y_coords, x_center, y_center)
-
-      fracs_Bx_x, fracs_Bx_y = fraction_finder(x_coords, y_coords, x_center, y_top)
-
-      fracs_By_x, fracs_By_y = fraction_finder(x_coords, y_coords, x_right, y_center)
-
-      fracs_Bz_x, fracs_Bz_y = fraction_finder(x_coords, y_coords, x_right, y_top)
+  Bz_particle = af.signal.approx2((Bz + Bz_updated)/2, fracs_Bz_y, fracs_Bz_x)
 
 
 
-    Ex_particle = af.signal.approx2(Ex, fracs_Ex_y, fracs_Ex_x)
+  # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
+  # Input x(n), v(n + 0.5), E(x(n + 1)) and B(n + 1)
+  (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(mass_particle, charge, x_initial, y_initial, z_initial,\
+                                                                   vel_x_initial, vel_y_initial, vel_z_initial, dt, \
+                                                                   Ex_particle, Ey_particle, Ez_particle,\
+                                                                   Bx_particle, By_particle, Bz_particle\
+                                                                  )
 
-    Ey_particle = af.signal.approx2(Ey, fracs_Ey_y, fracs_Ey_x)
+  # SAVING THE FIELDS FOR NEXT TIME STEP
 
-    Ez_particle = af.signal.approx2(Ez, fracs_Ez_y, fracs_Ez_x)
+  Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
 
-    Bx_particle = af.signal.approx2(Bx, fracs_Bx_y, fracs_Bx_x)
-
-    By_particle = af.signal.approx2(By, fracs_By_y, fracs_By_x)
-
-    Bz_particle = af.signal.approx2(Bz, fracs_Bz_y, fracs_Bz_x)
-
-
-
-
-
-    # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
-
-    (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(mass_particle, charge, x_initial, y_initial, z_initial,\
-                                                                     vel_x_initial, vel_y_initial, vel_z_initial, dt, \
-                                                                     Ex_particle, Ey_particle, Ez_particle,\
-                                                                     Bx_particle, By_particle, Bz_particle\
-                                                                    )
-
-    # SAVING THE FIELDS FOR NEXT TIME STEP
-
-    Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
-    # print('time is ',time_index)
-    # print('dt is ', dt)
-    # print('Ex max is ',af.max(Ex))
-    # print('Ex min is ',af.min(Ex))
-    # print('Jx max is ',af.max(Jx))
-    # print('Jx min is ',af.min(Jx))
-    # print('Jx is ', Jx)
-    # if(time_index%100 ==0):
-      # print('time is ',time_index)
-    #   print('dt is ', dt)
-    # print('Ex max is ',af.max(Ex))
-    # print('Ex min is ',af.min(Ex))
-    # print('Bz max is ',af.max(Bz))
-    # print('Bz min is ',af.min(Bz))
-    # print('Ey max is ',af.max(Ey))
-    # print('Ey min is ',af.min(Ey))
-    # print('Jx max is ',af.max(Jx)/no_of_particles)
-    # print('Jx min is ',af.min(Jx)/no_of_particles)
-    # print('Jy max is ',af.max(Jy)/no_of_particles)
-    # print('Jy min is ',af.min(Jy)/no_of_particles)
-    # print('Jz max is ',af.max(Jz)/no_of_particles)
-    # print('Jz min is ',af.min(Jz)/no_of_particles)
-      #
-    #   print('Ez max is ',af.max(Ez))
-    #   print('Ez min is ',af.min(Ez))
-    #   print('Bx max is ',af.max(Bx))
-    #   print('Bx min is ',af.min(Bx))
-    #   print('By max is ',af.max(By))
-    #   print('By min is ',af.min(By))
-
-      # print('Jx is ', Jx)
-    # print('x min is', af.min(x_coords))
-    # print('x max is ', af.max(x_coords))
-    # input('check')
-
-    #
-    # if(time_index == 10):
-    #     diff_Ex =
 
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
   (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
-  # print('Jx is', Jx)
-  # print('Ex = ', Ex)
-  # print('Ey = ', Ey)
-  # print('Bz = ', Bz)
-  # input('CHECK')
-  # (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = collision_operator(x_initial,     y_initial,     z_initial, \
-  #                                                                          vel_x_initial, vel_y_initial, vel_z_initial, dt\
-  #                                                                         )
+
 
   ## Here, we shall set assign the values to variables which shall be used as a starting point for the next time-step
 
-  old_x = x_coords
-  old_y = y_coords
-  old_z = z_coords
+  x_initial = x_coords.copy()
+  y_initial = y_coords.copy()
+  z_initial = z_coords.copy()
 
-  old_vel_x = vel_x
-  old_vel_y = vel_y
-  old_vel_z = vel_z
+  vel_x_initial = vel_x.copy()
+  vel_y_initial = vel_y.copy()
+  vel_z_initial = vel_z.copy()
 
-  #""" Assigning values for the post processing variables """
-
-  #if(plot_spatial_temperature_profile == "true" and time_index%100 == 0):
-    #particle_xzone   = (x_zones/length_box_x) * (x_coords - left_boundary)
-    #particle_yzone   = (y_zones/length_box_y) * (y_coords - bottom_boundary)
-    #particle_xzone   = particle_xzone.astype(int)
-    #particle_yzone   = particle_yzone.astype(int)
-    #particle_zone    = x_zones * particle_yzone + particle_xzone
-    #zonecount        = np.bincount(particle_zone)
-
-    #temperature_spatial = np.zeros(zonecount.elements())
-
-    #for i in range(x_zones*y_zones):
-      #indices = np.where(particle_zone == i)[0]
-      #temperature_spatial[i] = 0.5*np.sum(vel_x[indices]**2 + vel_y[indices]**2)
-
-    #temperature_spatial = temperature_spatial/zonecount
-    #temperature_spatial = temperature_spatial.reshape(x_zones,y_zones)
-
-  #"""Calculation of the functions which will be used to post-process the results of the simulation run"""
-
-  #momentum_x[time_index]     = mass_particle * np.sum(vel_x)
-  #momentum_y[time_index]     = mass_particle * np.sum(vel_y)
-  #momentum_z[time_index]     = mass_particle * np.sum(vel_z)
-
-  #kinetic_energy[time_index] = 0.5*mass_particle*np.sum(vel_x**2 + vel_y**2 + vel_z**2)
-
-  #pressure[time_index]       = np.sum(vel_x**2 + vel_y**2 + vel_z**2)/no_of_particles
-
-  #heatflux_x[time_index]     = np.sum(vel_x*(vel_x**2 + vel_y**2 + vel_z**2))/no_of_particles
-  #heatflux_y[time_index]     = np.sum(vel_y*(vel_x**2 + vel_y**2 + vel_z**2))/no_of_particles
-  #heatflux_z[time_index]     = np.sum(vel_z*(vel_x**2 + vel_y**2 + vel_z**2))/no_of_particles
-
-  #if(collision_operator == "potential-based"):
-    #from collision_operators.potential import calculate_potential_energy
-    #potential_energy = calculate_potential_energy(sol)
-
-  ## Writing the data to file every 100 time steps
-  ## Make changes to this write frequency if necessary
-  ## This data will then be post-processed to generate results
-
-  ##if((time_index%10)==0):
-    ##h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
-    ##h5f.create_dataset('x_coords',   data = x_coords)
-    ##h5f.create_dataset('y_coords',   data = y_coords)
-    ##h5f.create_dataset('z_coords',   data = z_coords)
-    ##h5f.create_dataset('vel_x',      data = vel_x)
-    ##h5f.create_dataset('vel_y',      data = vel_y)
-    ##h5f.create_dataset('vel_z',      data = vel_z)
-    ##h5f.create_dataset('momentum_x', data = momentum_x)
-    ##h5f.create_dataset('momentum_y', data = momentum_y)
-    ##h5f.create_dataset('momentum_z', data = momentum_z)
-    ##h5f.create_dataset('heatflux_x', data = heatflux_x)
-    ##h5f.create_dataset('heatflux_y', data = heatflux_y)
-    ##h5f.create_dataset('heatflux_z', data = heatflux_z)
-
-    ##h5f.create_dataset('kinetic_energy', data = kinetic_energy)
-    ##h5f.create_dataset('pressure',       data = pressure)
-    ##h5f.create_dataset('time',           data = time)
-
-    ##if(collision_operator == "potential-based"):
-      ##h5f.create_dataset('potential_energy',    data = potential_energy)
-
-    ##if(plot_spatial_temperature_profile == "true"):
-      ##h5f.create_dataset('temperature_spatial', data = temperature_spatial)
-
-    ##h5f.close()
 
   if(time_index%100==0):
     h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')

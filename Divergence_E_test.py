@@ -303,7 +303,7 @@ for time_index,t0 in enumerate(time):
     #   pl.show()
     #   pl.clf()
     #   print(div_E_minus_rho.dims())
-      pl.contourf(np.array(x_center[1:-1]), np.array(y_center[1:-1]), np.array(div_E_minus_rho[1:-1, 1:-1]), 100)
+      pl.contourf(np.array(x_center[2:-2]), np.array(y_center[2:-2]), np.array(div_E_minus_rho[2:-2, 2:-2]), 100)
       pl.colorbar()
       pl.xlabel('$x$')
       pl.ylabel('$y$')
@@ -361,17 +361,17 @@ for time_index,t0 in enumerate(time):
 
 
 
-    Ex_particle = 0 * af.signal.approx2(Ex_updated, fracs_Ex_y, fracs_Ex_x)
+    Ex_particle =  af.signal.approx2(Ex_updated, fracs_Ex_y, fracs_Ex_x)
 
-    Ey_particle = 0 * af.signal.approx2(Ey_updated, fracs_Ey_y, fracs_Ey_x)
+    Ey_particle =  af.signal.approx2(Ey_updated, fracs_Ey_y, fracs_Ey_x)
 
-    Ez_particle = 0 * af.signal.approx2(Ez_updated, fracs_Ez_y, fracs_Ez_x)
+    Ez_particle =  af.signal.approx2(Ez_updated, fracs_Ez_y, fracs_Ez_x)
 
-    Bx_particle = 0 * af.signal.approx2((Bx + Bx_updated)/2, fracs_Bx_y, fracs_Bx_x)
+    Bx_particle =  af.signal.approx2((Bx + Bx_updated)/2, fracs_Bx_y, fracs_Bx_x)
 
-    By_particle = 0 * af.signal.approx2((Bx + Bx_updated)/2, fracs_By_y, fracs_By_x)
+    By_particle =  af.signal.approx2((Bx + Bx_updated)/2, fracs_By_y, fracs_By_x)
 
-    Bz_particle = 0 * af.signal.approx2((Bx + Bx_updated)/2, fracs_Bz_y, fracs_Bz_x)
+    Bz_particle =  af.signal.approx2((Bx + Bx_updated)/2, fracs_Bz_y, fracs_Bz_x)
 
     # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
     # x_coords at (time_index + 1) * dt and x_initial at (time_index) * dt
@@ -417,7 +417,7 @@ for time_index,t0 in enumerate(time):
     pl.show()
     pl.clf()
 
-    pl.contourf(np.array(x_center), np.array(y_center), np.array(div_E_minus_rho), 100)
+    pl.contourf(np.array(x_center[4: -4]), np.array(y_center[4: -4]), np.array(div_E_minus_rho[4:-4, 4:-4]), 100)
     pl.colorbar()
     pl.xlabel('$x$')
     pl.ylabel('$y$')

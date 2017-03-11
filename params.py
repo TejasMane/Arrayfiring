@@ -1,4 +1,4 @@
-no_of_particles      = 100
+no_of_particles      = 10000
 mass_particle        = 1.0
 boltzmann_constant   = 1.0
 
@@ -113,4 +113,4 @@ length_box_z     = front_boundary - back_boundary
 """ Linear Theory terms"""
 import numpy as np
 k_fourier = 2*np.pi
-Amplitude_perturbed = 0.5
+Amplitude_perturbed = 0.1

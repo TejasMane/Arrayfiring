@@ -5,16 +5,16 @@ import h5py
 
 def Dirichlet(V, ghost_cells, x_points, y_points):
     # Top wall ghost
-    V[ 0 : ghost_cells, :] = 0#V[-2 - ghost_cells, :]
+    V[ 0 : ghost_cells, :] = V[-2 - ghost_cells, :]
 
     # Bottom wall ghost points
-    V[y_points - ghost_cells : y_points, :] = 0#V[ghost_cells + 1, :]
+    V[y_points - ghost_cells : y_points, :] = V[ghost_cells + 1, :]
 
     # Left wall ghost
-    V[ :, 0 : ghost_cells] = 0#V[:, -2 - ghost_cells]
+    V[ :, 0 : ghost_cells]                  = V[:, -2 - ghost_cells]
 
     # Right wall ghost
-    V[:, x_points - ghost_cells : x_points] = 0#V[:, ghost_cells + 1]
+    V[:, x_points - ghost_cells : x_points] = V[:, ghost_cells + 1]
 
     return V
 
@@ -31,6 +31,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
     max_iterations = kwargs.get('max_iterations', None)
 
     l = x_points
+
     if(omega == None):
         omega = 2/(1+(np.pi/l)) - 1
 
@@ -81,10 +82,13 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
                 print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
                 # Error[i/100] = af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points)
                 # print('Error',Error[:10])
-            if(af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points) < epsilon):
-                h5f = h5py.File('data_files/error.h5', 'w')
-                h5f.create_dataset('Error',   data = Error)
-                h5f.close()
+                V[-1]
+            if(af.max(af.abs(V_k_plus - V_k)) < epsilon):
+                # h5f = h5py.File('data_files/error.h5', 'w')
+                # h5f.create_dataset('Error',   data = Error)
+                # h5f.close()
+                print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
+                print('epsilon is ', epsilon)
                 return V_k_plus
 
 
@@ -92,6 +96,7 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
     # h5f.create_dataset('Error',   data = Error)
     # h5f.close()
     af.eval(V_k_plus)
+    print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
     return V_k_plus
 
 
@@ -105,8 +110,8 @@ def compute_Electric_field(V, dx, dy, ghost_cells):
     Ex = -(af.data.shift(V, 0, 1) - af.data.shift(V, 0, 0))/dx
     Ey = -(af.data.shift(V, 1, 0) - af.data.shift(V, 0, 0))/dy
 
-    # Ex = Dirichlet(Ex, ghost_cells, x_points, y_points)
-    # Ey = Dirichlet(Ey, ghost_cells, x_points, y_points)
+    Ex = Dirichlet(Ex, ghost_cells, x_points, y_points)
+    Ey = Dirichlet(Ey, ghost_cells, x_points, y_points)
 
     return Ex, Ey
 
@@ -114,12 +119,15 @@ def compute_divergence_E_minus_rho(Ex, Ey, rho, dx, dy, ghost_cells):
     # (Ex(i + 1/2, j)- Ex(i - 1/2, j))/dx + (Ey(i, j + 1/2)- Ey(i, j - 1/2))/dy - rho[i, j]
     # Row column representation
     # (Ex[i, j] - Ex[i, j-1])/dx + (Ey[i, j] - Ey[i - 1, j])/dy - rho[i, j]
+    x_points = (rho[0, :]).elements()
+    y_points = (rho[:, 0]).elements()
+
 
     div_E_minus_rho =   (af.data.shift(Ex, 0, 0) - af.data.shift(Ex, 0, -1))/dx \
                       + (af.data.shift(Ey, 0, 0) - af.data.shift(Ey, -1, 0))/dy\
                       - (rho)
 
-    # div_E_minus_rho = Dirichlet(div_E_minus_rho, ghost_cells, x_points, y_points)
+    div_E_minus_rho = Dirichlet(div_E_minus_rho, ghost_cells, x_points, y_points)
 
 
     return div_E_minus_rho
