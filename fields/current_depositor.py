@@ -305,7 +305,6 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
                          x_grid, y_grid, ghost_cells, Lx, Ly, dt\
                        ):
 
-
   x_current_zone = af.data.constant(0,x.elements(), dtype=af.Dtype.u32)
   y_current_zone = af.data.constant(0,y.elements(), dtype=af.Dtype.u32)
 
@@ -321,13 +320,12 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   y_1 = (y).as_type(af.Dtype.f64)
   y_2 = (y + (velocity_required_y * dt)).as_type(af.Dtype.f64)
 
+  i_1 = af.arith.floor( ((af.abs( x_1 - af.sum(x_grid[0])))/dx) - ghost_cells)
+  j_1 = af.arith.floor( ((af.abs( y_1 - af.sum(y_grid[0])))/dy) - ghost_cells)
 
-  i_1 = ( ((af.abs( x_1 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
-  j_1 = ( ((af.abs( y_1 - af.sum(y_grid[0])))/dy) - ghost_cells).as_type(af.Dtype.u32)
 
-
-  i_2 = ( ((af.abs( x_2 - af.sum(x_grid[0])))/dx) - ghost_cells).as_type(af.Dtype.u32)
-  j_2 = ( ((af.abs( y_2 - af.sum(y_grid[0])))/dy) - ghost_cells).as_type(af.Dtype.u32)
+  i_2 = af.arith.floor( ((af.abs( x_2 - af.sum(x_grid[0])))/dx) - ghost_cells)
+  j_2 = af.arith.floor( ((af.abs( y_2 - af.sum(y_grid[0])))/dy) - ghost_cells)
 
   i_dx = dx * af.join(1, i_1, i_2)
   j_dy = dy * af.join(1, j_1, j_2)
@@ -371,8 +369,6 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   J_y_2_1 = (1/(dx * dy)) * (F_y_2 * (1 - W_x_2))
   J_y_2_2 = (1/(dx * dy)) * (F_y_2 * (W_x_2))
 
-
-
   Jx_x_indices = af.join(0, i_1 + ghost_cells, i_1 + ghost_cells,\
                             i_2 + ghost_cells, i_2 + ghost_cells\
                         )
@@ -380,8 +376,6 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
                             j_2 + ghost_cells, (j_2 + 1 + ghost_cells)\
                         )
   Jx_values_at_these_indices = af.join(0, J_x_1_1, J_x_1_2, J_x_2_1, J_x_2_2)
-
-
 
   Jy_x_indices = af.join(0, i_1 + ghost_cells, (i_1 + 1 + ghost_cells),\
                             i_2 + ghost_cells, (i_2 + 1 + ghost_cells)\
@@ -409,13 +403,11 @@ def Umeda_2003(charge, no_of_particles, positions_x ,positions_y, positions_z, v
   Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
   Jy_x_indices, Jy_y_indices,\
   Jy_values_at_these_indices = Umeda_b1_deposition( charge, positions_x, positions_y, velocities_x,\
-                                                     velocities_y, x_right_grid, y_center_grid,\
+                                                     velocities_y, x_center_grid, y_center_grid,\
                                                      ghost_cells, Lx, Ly, dt\
                                                    )
 
-
   input_indices = (Jx_x_indices*(y_center_grid.elements()) + Jx_y_indices)
-
   Jx, temp = np.histogram(input_indices, bins=elements, range=(0, elements), weights=Jx_values_at_these_indices)
   Jx = af.data.moddims(af.to_array(Jx), y_center_grid.elements(), x_center_grid.elements())
 

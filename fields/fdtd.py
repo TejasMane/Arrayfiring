@@ -220,57 +220,57 @@ def mode1_fdtd( Ez, Bx, By, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt,no_of_particl
 
   """ local variables for storing the input fields """
 
-  Ez_local = Ez
-  Bx_local = Bx
-  By_local = By
+  Ez_local = Ez.copy()
+  Bx_local = Bx.copy()
+  By_local = By.copy()
 
-  """Enforcing BC's"""
-
-  Ez_local = periodic(Ez_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  Bx_local = periodic(Bx_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  By_local = periodic(By_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  """ Setting division size and time steps"""
-
-  dx = np.float(Lx / (Nx))
-  dy = np.float(Ly / (Ny))
-
-  """ defining variables for convenience """
-
-  dt_by_dx = dt / (dx)
-  dt_by_dy = dt / (dy)
-
-  """  Updating the Electric field using the current too """
-
-  Ez_local +=   dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, By_local)) \
-              - dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bx_local)) \
-              - dt*(Jz)
-
-  # dEz/dt = dBy/dx - dBx/dy
-
-  """  Implementing periodic boundary conditions using ghost cells  """
-
-  Ez_local = periodic(Ez_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  """  Updating the Magnetic fields   """
-
-  Bx_local += -dt_by_dy*(af.signal.convolve2_separable(forward_row, identity, Ez_local))
-
-  # dBx/dt = -dEz/dy
-
-  By_local += dt_by_dx*(af.signal.convolve2_separable(identity, forward_column, Ez_local))
-
-  # dBy/dt = +dEz/dx
-
-  """  Implementing periodic boundary conditions using ghost cells  """
-
-  Bx_local = periodic(Bx_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  By_local = periodic(By_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  af.eval(Ez_local, Bx_local, By_local)
+  # """Enforcing BC's"""
+  #
+  # Ez_local = periodic(Ez_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # Bx_local = periodic(Bx_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # By_local = periodic(By_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # """ Setting division size and time steps"""
+  #
+  # dx = np.float(Lx / (Nx))
+  # dy = np.float(Ly / (Ny))
+  #
+  # """ defining variables for convenience """
+  #
+  # dt_by_dx = dt / (dx)
+  # dt_by_dy = dt / (dy)
+  #
+  # """  Updating the Electric field using the current too """
+  #
+  # Ez_local +=   dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, By_local)) \
+  #             - dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bx_local)) \
+  #             - dt*(Jz)
+  #
+  # # dEz/dt = dBy/dx - dBx/dy
+  #
+  # """  Implementing periodic boundary conditions using ghost cells  """
+  #
+  # Ez_local = periodic(Ez_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # """  Updating the Magnetic fields   """
+  #
+  # Bx_local += -dt_by_dy*(af.signal.convolve2_separable(forward_row, identity, Ez_local))
+  #
+  # # dBx/dt = -dEz/dy
+  #
+  # By_local += dt_by_dx*(af.signal.convolve2_separable(identity, forward_column, Ez_local))
+  #
+  # # dBy/dt = +dEz/dx
+  #
+  # """  Implementing periodic boundary conditions using ghost cells  """
+  #
+  # Bx_local = periodic(Bx_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # By_local = periodic(By_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # af.eval(Ez_local, Bx_local, By_local)
   return Ez_local, Bx_local, By_local
 
 
@@ -301,9 +301,9 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_partic
 
   """ local variables for storing the input fields """
 
-  Bz_local = Bz
-  Ex_local = Ex
-  Ey_local = Ey
+  Bz_local = Bz.copy()
+  Ex_local = Ex.copy()
+  Ey_local = Ey.copy()
 
   """Enforcing periodic BC's"""
 
@@ -328,29 +328,30 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_partic
   """  Updating the Electric fields using the current too   """
 
   Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - (Jx) * dt
-
+  # print('Ex , Jx at some x',Ex,Jx)
+  # input('Iter')
   # dEx/dt = + dBz/dy
 
-  Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - (Jy) * dt
-
-  # dEy/dt = - dBz/dx
+  # Ey_local += -dt_by_dx * (af.signal.convolve2_separable(identity, backward_column, Bz_local)) - (Jy) * dt
+  #
+  # # dEy/dt = - dBz/dx
 
   """  Implementing periodic boundary conditions using ghost cells  """
 
   Ex_local = periodic(Ex_local, y_number_of_points, x_number_of_points, ghost_cells)
 
-  Ey_local = periodic(Ey_local, y_number_of_points, x_number_of_points, ghost_cells)
-
-  """  Updating the Magnetic field  """
-
-  Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Ey_local)) \
-              + dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Ex_local))
-
-  # dBz/dt = - ( dEy/dx - dEx/dy )
-
-  #Implementing periodic boundary conditions using ghost cells
-
-  Bz_local = periodic(Bz_local, y_number_of_points, x_number_of_points, ghost_cells)
+  # Ey_local = periodic(Ey_local, y_number_of_points, x_number_of_points, ghost_cells)
+  #
+  # """  Updating the Magnetic field  """
+  #
+  # Bz_local += - dt_by_dx * (af.signal.convolve2_separable(identity, forward_column, Ey_local)) \
+  #             + dt_by_dy * (af.signal.convolve2_separable(forward_row, identity, Ex_local))
+  #
+  # # dBz/dt = - ( dEy/dx - dEx/dy )
+  #
+  # #Implementing periodic boundary conditions using ghost cells
+  #
+  # Bz_local = periodic(Bz_local, y_number_of_points, x_number_of_points, ghost_cells)
 
   af.eval(Bz_local, Ex_local, Ey_local)
 

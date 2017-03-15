@@ -76,8 +76,8 @@ change may also be made at params.py
 """ Initializing the positions for the particles """
 
 # initial_position_x = left_boundary   + length_box_x * af.randu(no_of_particles)
-# initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
-# initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
+initial_position_y = bottom_boundary + length_box_y * af.randu(no_of_particles)
+initial_position_z = back_boundary   + length_box_z * af.randu(no_of_particles)
 """Initializing x positions here"""
 
 # Might not initialize correctly for some divisions
@@ -89,17 +89,17 @@ initial_position_x=np.zeros(no_of_particles)
 last=0
 next=0
 for i in range(x_divisions_perturbed):
-   next=last+(no_of_particles*Amplitude_perturbed*np.sin(2*i*np.pi/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
+   next=last+(no_of_particles*Amplitude_perturbed*np.sin((np.pi/2) + 2*i*np.pi/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
    initial_position_x[int(round(last)):(int(round(next))-1)] = length_of_box_x*(i+1)/(x_divisions_perturbed+1)
    last=next
 
-# initial_position_x = 0.499 + left_boundary   + 0.001 * length_box_x * af.randu(no_of_particles)
-# initial_position_y = 0.499 + bottom_boundary + 0.001 * length_box_y * af.randu(no_of_particles)
-# initial_position_z = 0.499 + back_boundary   + 0.001 * length_box_z * af.randu(no_of_particles)
+# initial_position_x = 0.25 + left_boundary   + 0.5 * length_box_x * af.randu(no_of_particles)
+# initial_position_y = 0.25 + bottom_boundary + 0.5 * length_box_y * af.randu(no_of_particles)
+# initial_position_z = 0.25 + back_boundary   + 0.5 * length_box_z * af.randu(no_of_particles)
 
 # initial_position_x = 0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
-initial_position_y = 0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
-initial_position_z = 0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
+# initial_position_y = 0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
+# initial_position_z = 0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
 
 """ Initializing velocities to the particles """
 
@@ -120,7 +120,7 @@ R4 = af.randu(no_of_particles)
 # For this we shall be using the Box-Muller transformation
 constant_multiply  = np.sqrt(2 * boltzmann_constant*T_initial/mass_particle)
 initial_velocity_x = 0.2 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
-initial_velocity_y = 0.2 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)
+initial_velocity_y = 0.2 * af.data.constant(0, no_of_particles, dtype=af.Dtype.f64)
 # initial_velocity_z = constant_multiply*af.arith.sqrt(-af.arith.log(R4))*af.arith.cos(2*np.pi*R3)
 
 

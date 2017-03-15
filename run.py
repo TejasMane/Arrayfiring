@@ -167,7 +167,7 @@ elif(wall_condition_z == "periodic"):
 if(fields_enabled == "true"):
   from fields.fdtd import fdtd
   from integrators.magnetic_verlet import integrator
-  from fields.current_depositor import dcd, current_b1_depositor, charge_b1_depositor
+  from fields.current_depositor import dcd, current_b1_depositor, charge_b1_depositor, Umeda_2003
   Ez = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
   Bx = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
   By = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
@@ -201,7 +201,7 @@ if(fields_enabled == "true"):
   dx = length_box_x/x_zones_field
   dy = length_box_y/y_zones_field
   # At time t = 0 * dt
-  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * no_of_particles * Amplitude_perturbed * (1/k_fourier) * \
+  Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * Amplitude_perturbed * (1/k_fourier) * \
                                                            af.arith.sin(k_fourier*(X_right_physical))
   # print('Ex initialized is ', Ex)
 # Now we shall proceed to evolve the system with time:
@@ -219,11 +219,19 @@ for time_index,t0 in enumerate(time):
   Jx[:, :], Jy[:, :], Jz[:, :] = 0, 0, 0
 
   # Getting Jx, Jy, Jz at t = (n + 0.5) * dt from x(n * dt) and v at (n + 0.5) * dt
-  Jx, Jy, Jz = dcd( charge, no_of_particles, x_initial, y_initial, \
-                  z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
-                  y_center, current_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy, dt \
+  # Jx, Jy, Jz = dcd( charge, no_of_particles, x_initial, y_initial, \
+  #                 z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
+  #                 y_center, current_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy, dt \
+  #               )
+
+
+  Jx, Jy, Jz = Umeda_2003(charge, no_of_particles, x_initial ,y_initial, z_initial, vel_x_initial, vel_y_initial, vel_z_initial, \
+                  x_center, y_center, ghost_cells, length_box_x, length_box_y, dx, dy, dt\
                 )
 
+  Jx = Jx/no_of_particles
+  Jy = Jy/no_of_particles
+  Jz = Jz/no_of_particles
   # Getting E((n + 1) * dt) and B((n + 1 + 0.5) * dt) from E(n * dt) and B((n + 0.5) * dt)
   Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
                                                                                  speed_of_light, length_box_x,\
@@ -283,7 +291,7 @@ for time_index,t0 in enumerate(time):
 
   # SAVING THE FIELDS FOR NEXT TIME STEP
 
-  Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
+  Ex, Ey, Ez, Bx, By, Bz = Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
 
 
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
@@ -303,7 +311,10 @@ for time_index,t0 in enumerate(time):
 
 
   if(time_index%100==0):
+    # print('vel y',af.sum(af.abs(vel_y)))
+    # print('Bz',af.sum(af.abs(Bz)))
     h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
     h5f.create_dataset('x_coords',   data = x_coords)
+    h5f.create_dataset('vel_x',   data = vel_x)
     h5f.create_dataset('Ex',   data = (Ex))
     h5f.close()

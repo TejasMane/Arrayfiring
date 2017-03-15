@@ -1,4 +1,7 @@
-no_of_particles      = 10000
+# Stability criterion
+# dx < 3 * (root(T/ne^2))
+
+no_of_particles      = 100000
 mass_particle        = 1.0
 boltzmann_constant   = 1.0
 
@@ -49,8 +52,8 @@ if(fields_enabled == "true"):
   ghost_cells     = 1       # Refers to the number of cells beyond the physical domain(usually set to 1)
   speed_of_light  = 1
   charge          = -1      # Charge of each individual particle in the simulation
-  x_zones_field   = 100     # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
-  y_zones_field   = 100      # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
+  x_zones_field   = 200    # Refers to the number of x-divisions for the cells that are used to compute fields, and currents
+  y_zones_field   = 4      # Refers to the number of y-divisions for the cells that are used to compute fields, and currents
   forward_row     = af.Array([1, -1, 0])
   forward_column  = af.Array([1, -1, 0])
   backward_row    = af.Array([0, 1, -1])
@@ -95,7 +98,7 @@ if(wall_condition_z == "thermal"):
   T_front_wall = 2.0
   T_back_wall  = 2.0
 
-
+import numpy as np
 """ Length Parameters of Simulation Domain """
 
 left_boundary    = 0.
@@ -111,6 +114,6 @@ front_boundary   = 1.
 length_box_z     = front_boundary - back_boundary
 
 """ Linear Theory terms"""
-import numpy as np
+
 k_fourier = 2*np.pi
 Amplitude_perturbed = 0.1

@@ -224,13 +224,6 @@ for time_index,t0 in enumerate(time):
   if(time_index == time.size-1):
     break
 
-  if(time_index!=0):
-    x_initial     = old_x
-    y_initial     = old_y
-    z_initial     = old_z
-    vel_x_initial = old_vel_x
-    vel_y_initial = old_vel_y
-    vel_z_initial = old_vel_z
 
   """
   We shall use the integrator that accounts only for collisions in the case of potential-based model
@@ -259,12 +252,19 @@ for time_index,t0 in enumerate(time):
                         y_center, ghost_cells,length_box_x, length_box_y, dx, dy,dt \
                       )
 
+      Jx = Jx/no_of_particles
+      Jy = Jy/no_of_particles
+      Jz = Jz/no_of_particles
       rho = direct_charge_deposition( charge, no_of_particles, x_initial, y_initial, \
                         z_initial, x_center, \
                         y_center, charge_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy \
                       )
 
-
+      rho[ghost_cells:-ghost_cells,ghost_cells:-ghost_cells] = (rho[ghost_cells:-ghost_cells,ghost_cells:-ghost_cells] + \
+                                                                no_of_particles * (-charge/(dx * dy))/(X_center_physical[0,:].elements()*\
+                                                                X_center_physical[:,0].elements()))#/no_of_particles
+      print('Sum of rho is ', af.sum(rho))
+    #   rho = rho/no_of_particles
       V = SOR(rho, ghost_cells, dx, dy)
 
       # Ex and Ey at t = 0
@@ -319,62 +319,60 @@ for time_index,t0 in enumerate(time):
                         z_initial, vel_x_initial, vel_y_initial, vel_z_initial, x_center, \
                         y_center, ghost_cells,length_box_x, length_box_y, dx, dy,dt \
                       )
-
-    # Ex_updated at t = (time_index + 1) *dt  at Ex at (time_index) * dt
+    #   Jx = Jx/no_of_particles
+    #   Jy = Jy/no_of_particles
+    #   Jz = Jz/no_of_particles
+# Getting E((n + 1) * dt) and B((n + 1 + 0.5) * dt) from E(n * dt) and B((n + 0.5) * dt)
     Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
                                                                                    speed_of_light, length_box_x,\
                                                                                    length_box_y, ghost_cells, Jx, Jy,\
                                                                                    Jz, dt, no_of_particles\
                                                                                  )
 
-    ## Updated fields info: Electric fields at (n+1)dt, and Magnetic fields at (n+1.5)dt from (E at ndt and B at (n+0.5dt) )
+    # finding fractional positions for interpolating fields for x((n + 1) * dt)
 
-    ## E at ndt and B averaged at (n + 1)dt to push v at (n+0.5)dt
+    fracs_Ex_x, fracs_Ex_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                             y_initial + vel_y_initial * dt, \
+                                             x_right, y_center)
 
-    if(time_index==0):
+    fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                             y_initial + vel_y_initial * dt, \
+                                             x_right, y_center)
 
-      fracs_Ex_x, fracs_Ex_y = fraction_finder(x_initial, y_initial, x_right, y_center)
+    fracs_Ez_x, fracs_Ez_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                             y_initial + vel_y_initial * dt, \
+                                             x_right, y_center)
 
-      fracs_Ey_x, fracs_Ey_y = fraction_finder(x_initial, y_initial, x_center, y_top)
+    fracs_Bx_x, fracs_Bx_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                             y_initial + vel_y_initial * dt, \
+                                             x_right, y_center)
 
-      fracs_Ez_x, fracs_Ez_y = fraction_finder(x_initial, y_initial, x_center, y_center)
+    fracs_By_x, fracs_By_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                             y_initial + vel_y_initial * dt, \
+                                             x_right, y_center)
 
-      fracs_Bx_x, fracs_Bx_y = fraction_finder(x_initial, y_initial, x_center, y_top)
+    fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial + vel_x_initial * dt,\
+                                             y_initial + vel_y_initial * dt, \
+                                             x_right, y_center)
 
-      fracs_By_x, fracs_By_y = fraction_finder(x_initial, y_initial, x_right, y_center)
+    # Find E(x[(n + 1) * dt]) and B(x[(n + 1) * dt])
 
-      fracs_Bz_x, fracs_Bz_y = fraction_finder(x_initial, y_initial, x_right, y_top)
+    Ex_particle = af.signal.approx2(Ex_updated, fracs_Ex_y, fracs_Ex_x)
 
-    else:
+    Ey_particle = af.signal.approx2(Ey_updated, fracs_Ey_y, fracs_Ey_x)
 
-      fracs_Ex_x, fracs_Ex_y = fraction_finder(x_coords, y_coords, x_right, y_center)
+    Ez_particle = af.signal.approx2(Ez_updated, fracs_Ez_y, fracs_Ez_x)
 
-      fracs_Ey_x, fracs_Ey_y = fraction_finder(x_coords, y_coords, x_center, y_top)
+    Bx_particle = af.signal.approx2((Bx + Bx_updated)/2, fracs_Bx_y, fracs_Bx_x)
 
-      fracs_Ez_x, fracs_Ez_y = fraction_finder(x_coords, y_coords, x_center, y_center)
+    By_particle = af.signal.approx2((By + By_updated)/2, fracs_By_y, fracs_By_x)
 
-      fracs_Bx_x, fracs_Bx_y = fraction_finder(x_coords, y_coords, x_center, y_top)
-
-      fracs_By_x, fracs_By_y = fraction_finder(x_coords, y_coords, x_right, y_center)
-
-      fracs_Bz_x, fracs_Bz_y = fraction_finder(x_coords, y_coords, x_right, y_top)
+    Bz_particle = af.signal.approx2((Bz + Bz_updated)/2, fracs_Bz_y, fracs_Bz_x)
 
 
-
-    Ex_particle =  af.signal.approx2(Ex_updated, fracs_Ex_y, fracs_Ex_x)
-
-    Ey_particle =  af.signal.approx2(Ey_updated, fracs_Ey_y, fracs_Ey_x)
-
-    Ez_particle =  af.signal.approx2(Ez_updated, fracs_Ez_y, fracs_Ez_x)
-
-    Bx_particle =  af.signal.approx2((Bx + Bx_updated)/2, fracs_Bx_y, fracs_Bx_x)
-
-    By_particle =  af.signal.approx2((Bx + Bx_updated)/2, fracs_By_y, fracs_By_x)
-
-    Bz_particle =  af.signal.approx2((Bx + Bx_updated)/2, fracs_Bz_y, fracs_Bz_x)
 
     # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
-    # x_coords at (time_index + 1) * dt and x_initial at (time_index) * dt
+    # Input x(n), v(n + 0.5), E(x(n + 1)) and B(n + 1)
     (x_coords, y_coords, z_coords, vel_x, vel_y, vel_z) = integrator(mass_particle, charge, x_initial, y_initial, z_initial,\
                                                                      vel_x_initial, vel_y_initial, vel_z_initial, dt, \
                                                                      Ex_particle, Ey_particle, Ez_particle,\
@@ -385,22 +383,21 @@ for time_index,t0 in enumerate(time):
 
     Ex, Ey, Ez, Bx, By, Bz= Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
 
-  # Periodic Boundary conditions for particles going outside the box
 
-  (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
-  (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
-  (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
+    (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
+    (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
+    (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
 
-  ## Here, we shall set assign the values to variables which shall be used as a starting point for the next time-step
 
-  old_x = x_coords
-  old_y = y_coords
-  old_z = z_coords
+    ## Here, we shall set assign the values to variables which shall be used as a starting point for the next time-step
 
-  old_vel_x = vel_x
-  old_vel_y = vel_y
-  old_vel_z = vel_z
+    x_initial = x_coords.copy()
+    y_initial = y_coords.copy()
+    z_initial = z_coords.copy()
 
+    vel_x_initial = vel_x.copy()
+    vel_y_initial = vel_y.copy()
+    vel_z_initial = vel_z.copy()
   if(time_index%100==0):
 
     rho = direct_charge_deposition(charge, no_of_particles, x_coords, y_coords,\
@@ -408,7 +405,9 @@ for time_index,t0 in enumerate(time):
                         x_center, y_center, charge_b1_depositor, ghost_cells,\
                         length_box_x, length_box_y, dx, dy \
                       )
-
+    rho[ghost_cells:-ghost_cells,ghost_cells:-ghost_cells] = (rho[ghost_cells:-ghost_cells,ghost_cells:-ghost_cells] + \
+                                                            no_of_particles * (-charge/(dx * dy))/(X_center_physical[0,:].elements()*\
+                                                            X_center_physical[:,0].elements()))#/no_of_particles
     pl.contourf(np.array(x_center), np.array(y_center), np.array(rho), 100)
     pl.colorbar()
     pl.title(r'$\rho$'+ str(time_index))

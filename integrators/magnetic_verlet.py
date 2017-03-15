@@ -11,7 +11,7 @@ Input fields : E(x((n + 1)*dt)), B(x((n+1)*dt))
 """
 
 def integrator(mass_particle, charge, x_coords, y_coords, z_coords, vel_x, vel_y, vel_z, dt, Ex, Ey, Ez, Bx, By, Bz):
-
+  # print('velocities are',af.sum(vel_x)/(vel_x.elements()) )
   vel_x_minus = vel_x + (charge * Ex * dt) / (2 * mass_particle)
   vel_y_minus = vel_y + (charge * Ey * dt) / (2 * mass_particle)
   vel_z_minus = vel_z + (charge * Ez * dt) / (2 * mass_particle)

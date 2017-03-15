@@ -4,17 +4,11 @@ import h5py
 # from wall_options.EM_periodic import periodic
 
 def Dirichlet(V, ghost_cells, x_points, y_points):
-    # Top wall ghost
-    V[ 0 : ghost_cells, :] = V[-2 - ghost_cells, :]
 
-    # Bottom wall ghost points
-    V[y_points - ghost_cells : y_points, :] = V[ghost_cells + 1, :]
-
-    # Left wall ghost
-    V[ :, 0 : ghost_cells]                  = V[:, -2 - ghost_cells]
-
-    # Right wall ghost
-    V[:, x_points - ghost_cells : x_points] = V[:, ghost_cells + 1]
+    V[ 0 : ghost_cells, :]                    = V[y_points -1 - 2 * ghost_cells: y_points -1 - 1 * ghost_cells, :]
+    V[ :, 0 : ghost_cells]                    = V[:, x_points -1 - 2 * ghost_cells: x_points -1 - 1 * ghost_cells]
+    V[y_points - ghost_cells : y_points, :]   = V[ghost_cells + 1: 2 * ghost_cells + 1, :]
+    V[:, x_points - ghost_cells : x_points]   = V[: , ghost_cells + 1: 2 * ghost_cells + 1]
 
     return V
 
@@ -36,10 +30,10 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
         omega = 2/(1+(np.pi/l)) - 1
 
     if(epsilon == None):
-        epsilon = 1e-8
+        epsilon = 1e-12
 
     if(max_iterations == None):
-        max_iterations = 3000000
+        max_iterations = 50000
 
     X_physical_index = ghost_cells + af.data.range(y_points - 2 * ghost_cells, d1= x_points - 2 * ghost_cells, dim=1)
     Y_physical_index = ghost_cells + af.data.range(y_points - 2 * ghost_cells, d1= x_points - 2 * ghost_cells, dim=0)
@@ -80,24 +74,37 @@ def SOR(rho_with_ghost, ghost_cells, dx, dy, *args, **kwargs):
         if(i%10 == 0):
             if(i%100==0):
                 print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
-                # Error[i/100] = af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points)
+                Error[i/100] = af.sum(af.abs(V_k_plus - V_k))/(x_points*y_points)
                 # print('Error',Error[:10])
-                V[-1]
             if(af.max(af.abs(V_k_plus - V_k)) < epsilon):
-                # h5f = h5py.File('data_files/error.h5', 'w')
-                # h5f.create_dataset('Error',   data = Error)
-                # h5f.close()
+                h5f = h5py.File('data_files/error.h5', 'w')
+                h5f.create_dataset('Error',   data = Error)
+                h5f.close()
                 print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
                 print('epsilon is ', epsilon)
                 return V_k_plus
 
 
-    # h5f = h5py.File('data_files/error.h5', 'w')
-    # h5f.create_dataset('Error',   data = Error)
-    # h5f.close()
+    h5f = h5py.File('data_files/error.h5', 'w')
+    h5f.create_dataset('Error',   data = Error)
+    h5f.close()
     af.eval(V_k_plus)
     print('iteration = ',i, 'Poisson convergence = ', af.max(af.abs(V_k_plus - V_k)) )
     return V_k_plus
+
+
+def FFT_1D(rho_with_ghost, ghost_cells, dx, dy):
+
+    x_points = (rho_with_ghost[0, :]).elements()
+    y_points = (rho_with_ghost[:, 0]).elements()
+
+
+
+
+
+
+
+
 
 
 def compute_Electric_field(V, dx, dy, ghost_cells):
