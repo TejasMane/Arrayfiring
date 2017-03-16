@@ -109,7 +109,7 @@ divisions_for_histogram_x = x_divisions/5
 divisions_for_histogram = divisions_for_histogram_x
 dx = af.sum(x_center[1]-x_center[0])
 dt         = np.float(dx / (0.2))
-time_mill       = np.linspace(0,3,60)
+time_mill       = np.linspace(0, 3, 30)
 
 
 # x_temp = np.linspace(0,1,100)
@@ -133,7 +133,7 @@ for time_index,t0 in enumerate(time):
 
         a,b = np.histogram(x_coords, bins=(divisions_for_histogram), range = (0,1))
         data[time_index/100] = max(abs(a/(no_of_particles/divisions_for_histogram_x)))-1
-        dataEx[time_index/100] = af.sum(af.abs(Ex[1:-1]))/(Ex.elements())
+        dataEx[time_index/100] = af.sum(af.abs(Ex[1:-1, :]))/(Ex.elements())
         data_energy[time_index/100] = np.sum(vel_x**2)
         print('Energy is ', data_energy[time_index/100])
     # print('time = ', time_index, 'Amplitude = ', max(a))
@@ -333,24 +333,24 @@ pl.plot(time_mill, dataEx, label = '$\mathrm{Numerical\;PIC}$')
 # pl.plot(time_mill, data_energy, label = '$\mathrm{Numerical\;PIC\;Energy}$')
 pl.xlabel('$\mathrm{time}$')
 # pl.ylabel(r'$\delta \hat{\rho}\left(t\right)$')
-pl.ylabel(r'$\delta \hat{\Ex}\left(t\right)$')
+pl.ylabel('$\delta \hat{\Ex}(t)$')
 
-pl.title('$\mathrm{Linear\;Landau\;damping$')
+pl.title('$\mathrm{Linear\;Landau\;damping}$')
 pl.legend()
 # pl.ylim(0, 0.01)
 # pl.xlim(0,2)
 pl.show()
-
+pl.clf()
 
 # pl.plot(time_ana, np.log(abs(Ex_amp)),label = '$LT1$')
 # pl.plot(time_ana, np.log(abs(Ex_amp2)),label = '$LT2$')
 
-pl.plot(time_ana, np.log(abs(Ex_amp_real)),label = '$LT1$')
+# pl.plot(time_ana, np.log(abs(Ex_amp_real)),label = '$LT1$')
 
 # pl.plot(time_ana, np.log(abs(delta_rho1)),label = '$\mathrm{Linear\;Theory\;with\;fields}$')
 # pl.plot(time_ana, np.log(abs(delta_rho2)),label = '$\mathrm{Linear\;Theory\;No\;fields}$')
 # pl.plot(time_mill,np.log(abs(data)),label = '$\mathrm{Numerical\;PIC}$')
-pl.plot(time_mill,np.log(abs(dataEx)),label = '$\mathrm{Numerical\;PIC}$')
+pl.semilogy(time_mill,(dataEx),label = '$\mathrm{Numerical\;PIC}$')
 pl.xlabel('$\mathrm{time}$')
 # pl.xlim(0,2)
 # pl.ylabel(r'$log(\delta \hat{\rho}\left(t\right))$')

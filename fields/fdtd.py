@@ -313,6 +313,7 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_partic
 
   Ey_local = periodic(Ey_local, y_number_of_points, x_number_of_points, ghost_cells)
 
+  Jx = periodic(Jx, y_number_of_points, x_number_of_points, ghost_cells)
 
   """ Setting division size and time steps"""
 
@@ -328,6 +329,7 @@ def mode2_fdtd( Bz, Ex, Ey, Lx, Ly, c, ghost_cells, Jx, Jy, Jz, dt, no_of_partic
   """  Updating the Electric fields using the current too   """
 
   Ex_local += dt_by_dy * (af.signal.convolve2_separable(backward_row, identity, Bz_local)) - (Jx) * dt
+
   # print('Ex , Jx at some x',Ex,Jx)
   # input('Iter')
   # dEx/dt = + dBz/dy

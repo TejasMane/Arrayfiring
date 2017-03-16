@@ -9,8 +9,8 @@ def zone_finder(x, y, x_grid, y_grid, Lx, Ly, ghost_cells):
     ny = (y_grid.elements() - 1 - 2 * ghost_cells)  # number of zones in physical domain
     dy = Ly / ny
 
-    x_zone = (((af.abs(x - af.sum(x_grid[0]))) / (dx)).as_type(af.Dtype.u32))
-    y_zone = (((af.abs(y - af.sum(y_grid[0]))) / (dy)).as_type(af.Dtype.u32))
+    x_zone = af.arith.floor((af.abs(x - af.sum(x_grid[0]))) / (dx))
+    y_zone = af.arith.floor((af.abs(y - af.sum(y_grid[0]))) / (dy))
 
     x_frac = (x - x_grid[x_zone]) / dx
     y_frac = (y - y_grid[y_zone]) / dy

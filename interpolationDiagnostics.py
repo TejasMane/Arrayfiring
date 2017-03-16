@@ -128,7 +128,7 @@ def interpolation_error_convergence(a, b):
                                                                                 )
 
         Bx[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = initial_fields(X_center_physical,   Y_top_physical )
-
+        # print('initial_fields(X_right_physical,Y_center_physical)', initial_fields(X_right_physical,Y_center_physical))
         By[ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = initial_fields(X_right_physical, \
                                                                                 Y_center_physical \
                                                                                 )
@@ -187,7 +187,7 @@ def interpolation_error_convergence(a, b):
 
 # N = np.array([32, 64, 128, 256, 512, 1024])
 
-N = np.arange(100, 3100, 100)
+N = np.arange(100, 2700, 100)
 N = af.to_array(N)
 # N = af.Array([5])
 """ Computing error at the corresponding grid densities """

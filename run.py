@@ -94,7 +94,7 @@ vel_y_initial = h5f['vel_y'][:]
 vel_y_initial = af.to_array(vel_y_initial)
 
 time          = h5f['time'][:]
-print('time length', time.size)
+# print('time length', time.size)
 x_center      = h5f['x_center'][:]
 x_center      = af.to_array(x_center)
 
@@ -102,10 +102,14 @@ y_center      = h5f['y_center'][:]
 y_center      = af.to_array(y_center)
 
 x_right       = h5f['x_right'][:]
-x_right        = af.to_array(x_center)
+x_right        = af.to_array(x_right)
+
+# print('x_center is ', x_center)
+# print('x_right is ', x_right)
+
 
 y_top         = h5f['y_top'][:]
-y_top         = af.to_array(y_center)
+y_top         = af.to_array(y_top)
 
 z_initial     = h5f['z_coords'][:]
 z_initial     = af.to_array(z_initial)
@@ -188,6 +192,8 @@ if(fields_enabled == "true"):
   Jy = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
   Jz = af.data.constant(0, y_center.elements(), x_center.elements(), dtype=af.Dtype.f64)
 
+
+
   X_center_physical = af.tile(af.reorder(x_center[ghost_cells:-ghost_cells],1), y_center[ghost_cells:-ghost_cells].elements(),1)
 
   X_right_physical  = af.tile(af.reorder(x_right[ghost_cells:-ghost_cells],1), y_center[ghost_cells:-ghost_cells].elements(),1)
@@ -201,8 +207,15 @@ if(fields_enabled == "true"):
   dx = length_box_x/x_zones_field
   dy = length_box_y/y_zones_field
   # At time t = 0 * dt
+
   Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * Amplitude_perturbed * (1/k_fourier) * \
                                                            af.arith.sin(k_fourier*(X_right_physical))
+
+
+  # Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells] = charge * 1000 * (1/k_fourier) * \
+  #                                                          af.arith.sin(k_fourier*(X_right_physical))
+  # print('X_right_physical is ', X_right_physical)
+  # print('Ex initialized as ', Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells])
   # print('Ex initialized is ', Ex)
 # Now we shall proceed to evolve the system with time:
 from fields.interpolator import zone_finder, fraction_finder
@@ -216,6 +229,9 @@ for time_index,t0 in enumerate(time):
   if(time_index == time.size-1):
     break
 
+
+  # print('vel_x_initial max is ',af.max(vel_x_initial))
+
   Jx[:, :], Jy[:, :], Jz[:, :] = 0, 0, 0
 
   # Getting Jx, Jy, Jz at t = (n + 0.5) * dt from x(n * dt) and v at (n + 0.5) * dt
@@ -224,7 +240,6 @@ for time_index,t0 in enumerate(time):
   #                 y_center, current_b1_depositor, ghost_cells,length_box_x, length_box_y, dx, dy, dt \
   #               )
 
-
   Jx, Jy, Jz = Umeda_2003(charge, no_of_particles, x_initial ,y_initial, z_initial, vel_x_initial, vel_y_initial, vel_z_initial, \
                   x_center, y_center, ghost_cells, length_box_x, length_box_y, dx, dy, dt\
                 )
@@ -232,7 +247,12 @@ for time_index,t0 in enumerate(time):
   Jx = Jx/no_of_particles
   Jy = Jy/no_of_particles
   Jz = Jz/no_of_particles
+
+  if(time_index == 0):
+      print('At time time_index = 0, max(Jx) is ', af.max(Jx))
+
   # Getting E((n + 1) * dt) and B((n + 1 + 0.5) * dt) from E(n * dt) and B((n + 0.5) * dt)
+
   Ex_updated, Ey_updated, Ez_updated, Bx_updated, By_updated, Bz_updated = fdtd( Ex, Ey, Ez, Bx, By, Bz, \
                                                                                  speed_of_light, length_box_x,\
                                                                                  length_box_y, ghost_cells, Jx, Jy,\
@@ -279,7 +299,10 @@ for time_index,t0 in enumerate(time):
 
   Bz_particle = af.signal.approx2((Bz + Bz_updated)/2, fracs_Bz_y, fracs_Bz_x)
 
-
+  # print('position is ',x_initial[4] + vel_x_initial[4] * dt)
+  # print('Electric field is ', Ex [ghost_cells:-ghost_cells, ghost_cells:-ghost_cells])
+  # print('Ex_particle for particle 5 is ', Ex_particle[4])
+  # input('check')
 
   # UPDATING THE PARTICLE COORDINATES USING BORIS ALGORITHM
   # Input x(n), v(n + 0.5), E(x(n + 1)) and B(n + 1)
@@ -293,11 +316,9 @@ for time_index,t0 in enumerate(time):
 
   Ex, Ey, Ez, Bx, By, Bz = Ex_updated.copy(), Ey_updated.copy(), Ez_updated.copy(), Bx_updated.copy(), By_updated.copy(), Bz_updated.copy()
 
-
   (x_coords, vel_x, vel_y, vel_z) = wall_x(x_coords, vel_x, vel_y, vel_z)
   (y_coords, vel_x, vel_y, vel_z) = wall_y(y_coords, vel_x, vel_y, vel_z)
   (z_coords, vel_x, vel_y, vel_z) = wall_z(z_coords, vel_x, vel_y, vel_z)
-
 
   ## Here, we shall set assign the values to variables which shall be used as a starting point for the next time-step
 
@@ -309,9 +330,11 @@ for time_index,t0 in enumerate(time):
   vel_y_initial = vel_y.copy()
   vel_z_initial = vel_z.copy()
 
-
   if(time_index%100==0):
-    # print('vel y',af.sum(af.abs(vel_y)))
+    # print('vel x max is ',af.max(vel_x))
+    print('Ex max is \n',af.max(Ex))
+    # print('max(Jx) is ',af.max(Jx))
+    # print(' x max is ', af.min(x_coords))
     # print('Bz',af.sum(af.abs(Bz)))
     h5f = h5py.File('data_files/timestepped_data/solution_'+str(time_index)+'.h5', 'w')
     h5f.create_dataset('x_coords',   data = x_coords)

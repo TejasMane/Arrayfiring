@@ -317,6 +317,8 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
   x_1 = (x).as_type(af.Dtype.f64)
   x_2 = (x + (velocity_required_x * dt)).as_type(af.Dtype.f64)
 
+  # print(' x_2 is ', x_2)
+
   y_1 = (y).as_type(af.Dtype.f64)
   y_2 = (y + (velocity_required_y * dt)).as_type(af.Dtype.f64)
 
@@ -326,6 +328,9 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
 
   i_2 = af.arith.floor( ((af.abs( x_2 - af.sum(x_grid[0])))/dx) - ghost_cells)
   j_2 = af.arith.floor( ((af.abs( y_2 - af.sum(y_grid[0])))/dy) - ghost_cells)
+
+  # print('i_1 is ', i_1)
+  # print('i_2 is ', i_2)
 
   i_dx = dx * af.join(1, i_1, i_2)
   j_dy = dy * af.join(1, j_1, j_2)
@@ -344,6 +349,8 @@ def Umeda_b1_deposition( charge, x, y, velocity_required_x, velocity_required_y,
 
   x_r = af.min(x_r_combined_term, 1)
   y_r = af.min(y_r_combined_term, 1)
+
+  # print('x_r is ', x_r)
 
   F_x_1 = charge * (x_r - x_1)/dt
   F_x_2 = charge * (x_2 - x_r)/dt

@@ -2,6 +2,7 @@ import numpy as np
 import h5py
 import params
 import arrayfire as af
+import random
 """Here we shall re-assign values as set in params"""
 
 no_of_particles      = params.no_of_particles
@@ -98,13 +99,17 @@ for i in range(x_divisions_perturbed):
    next=last+(no_of_particles*Amplitude_perturbed*np.sin((np.pi/2)+i*k_fourier*length_box_x/x_divisions_perturbed)/x_divisions_perturbed)+(no_of_particles/x_divisions_perturbed)
    number = len(initial_position_x[int(round(last)):(int(round(next))-1)])
    initial_position_x[int(round(last)):(int(round(next))-1)] = length_of_box_x*(i+1)/(x_divisions_perturbed+1)
-   initial_velocity_x[int(round(last)):(int(round(next))-1)] = (1 + Amplitude_perturbed * np.cos(i*k_fourier*length_box_x/x_divisions_perturbed)) * constant_multiply*np.sqrt(-np.log(np.random.rand(number)))*np.cos(2*np.pi*np.random.rand(number))
+   n_temp = (1 + Amplitude_perturbed * np.cos(i*k_fourier*length_box_x/x_divisions_perturbed))
+   # print('n_temp is ',n_temp)
+   # print('-np.log(np.random.rand(number)/(n_temp))',-np.log(np.random.rand(number)/(n_temp)))
+   initial_velocity_x[int(round(last)):(int(round(next))-1)] = n_temp * constant_multiply*np.sqrt(-np.log(np.random.rand(number)))*np.cos(2*np.pi*np.random.rand(number))#*random.choices([1,-1], cum_weights=None, k=number)
    last=next
 # initial_position_x = 0.25 + left_boundary   + 0.5 * length_box_x * af.randu(no_of_particles)
 
-initial_position_y =  bottom_boundary + 1 * length_box_y * af.randu(no_of_particles)
-initial_position_z =  back_boundary   + 1 * length_box_z * af.randu(no_of_particles)
+initial_position_y =  0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)#bottom_boundary + 1 * length_box_y * af.randu(no_of_particles)
+initial_position_z =  0.5 * af.data.constant(1, no_of_particles, dtype=af.Dtype.f64)#back_boundary   + 1 * length_box_z * af.randu(no_of_particles)
 
+print('vel_x max is ',sum(initial_velocity_x)/(len(initial_velocity_x)))
 
 """ Initializing velocities to the particles """
 
@@ -176,8 +181,10 @@ if(fields_enabled == "true"):
   x_right = np.linspace(-ghost_cells*(dx) + dx/2, length_box_x + (2*ghost_cells + 1)*(dx/2), x_zones_field + 1 + 2*ghost_cells)
   y_top   = np.linspace(-ghost_cells*(dy) + dy/2, length_box_y + (2*ghost_cells + 1)*(dy/2), y_zones_field + 1 + 2*ghost_cells)
 
+  # print('x_right initialize is ', x_right)
+
   final_time = 3
-  dt         = np.float(dx / (2 *5* speed_of_light))
+  dt         = np.float(dx / (2 * 5 * speed_of_light))
   time       = np.arange(0, final_time, dt)
 
 """ Writing the data to a file which can be accessed by a solver"""

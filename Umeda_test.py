@@ -21,25 +21,25 @@ def run_test(x):
 def test_1():
     charge = 1
 
-    no_of_particles = 2
-    # no_of_particles = 1
+    # no_of_particles = 2
+    no_of_particles = 1
 
 
-    positions_x = af.Array([0.7, 0.3])
-    positions_y = af.Array([0.7, 0.3])
-    positions_z = af.Array([0.5, 0.5])
-
-    velocities_x = af.Array([0.2, 0.2])
-    velocities_y = af.Array([0.2, 0.2])
-    velocities_z = af.Array([0.0, 0.0])
-
-    # positions_x = af.Array([0.7])
-    # positions_y = af.Array([0.7])
-    # positions_z = af.Array([0.5])
+    # positions_x = af.Array([0.7, 0.3])
+    # positions_y = af.Array([0.7, 0.3])
+    # positions_z = af.Array([0.5, 0.5])
     #
-    # velocities_x = af.Array([0.2])
-    # velocities_y = af.Array([0.2])
-    # velocities_z = af.Array([0.0])
+    # velocities_x = af.Array([0.1, 0.1])
+    # velocities_y = af.Array([0.1, 0.1])
+    # velocities_z = af.Array([0.0, 0.0])
+
+    positions_x = af.Array([0.7])
+    positions_y = af.Array([0.7])
+    positions_z = af.Array([0.5])
+
+    velocities_x = af.Array([1.0])
+    velocities_y = af.Array([1.0])
+    velocities_z = af.Array([0.0])
 
     x_center_grid = af.Array([-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
     y_center_grid = af.Array([-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
@@ -60,8 +60,8 @@ def test_1():
                              Lx, Ly, dx, dy, dt\
                            )
 
-    print('Jx is ', Jx)
-    print('Jy is ', Jy)
+    print('Jx*dx*dy is ', Jx*dx*dy)
+    print('Jy*dx*dy is ', Jy*dx*dy)
     print('Jz is ', Jz)
 
 
